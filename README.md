@@ -12,7 +12,7 @@ In the paper, the original PhaRaO is based on ISAM, however, we adapted the code
 3. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
 
-   If **_FFTW3LibraryDepend.cmake_** file related error occurred, don't use given configure file, build with cmake.
+   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, don't use the given configure file, build with cmake.
 
 4. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
 
@@ -24,9 +24,9 @@ In the paper, the original PhaRaO is based on ISAM, however, we adapted the code
    mkdir src
    cd src
    ~~~
-2. Download source file for PhaRaO
+2. Download the source file for PhaRaO
    ~~~
-   git clone https://github.com/rpmsnu/PhaRaO_gtsam.git
+   git clone https://github.com/hyesu-jang/PhaRaO_gtsam.git
    ~~~
 
 3. Compile the source file
@@ -38,13 +38,13 @@ In the paper, the original PhaRaO is based on ISAM, however, we adapted the code
     ~~~
     roslaunch file_player file_player.launch
     ~~~
-5. Run PhaRaO node (It will be alternated with launch file later)
+5. Run PhaRaO node (It will be alternated with the launch file later)
     ~~~
     rosrun pharao_gtsam pharao_gtsam_node
     ~~~
 
 ## Parameter Changing
-If your bag file fails generating odometry, revise the parameter in file **_radar_odom.cpp_**
+If your bag file fails to generate odometry, revise the parameter in the file **_radar_odom.cpp_**
 
 Line 391: Cost for generating odometry factor
 
