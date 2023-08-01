@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="pharao_gtsam" type="pharao_gtsam_node" name="pharao_gtsam_node" output="screen">
+    </node>
+
+</launch>
