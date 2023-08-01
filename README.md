@@ -46,6 +46,6 @@ In the paper, the original PhaRaO is based on ISAM, however, we adapted the code
 ## Parameter Changing
 If your bag file fails to generate odometry, revise the parameter in the file **_radar_odom.cpp_**
 
-Line 391: Cost for generating odometry factor
+1. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L491) for generating odometry factor
 
-Line 559,564,591: Cost for keyframe factor
+2. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L623) for keyframe factor
