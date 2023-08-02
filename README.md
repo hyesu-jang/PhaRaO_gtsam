@@ -1,9 +1,8 @@
 
-# PhaRaO with GTSAM
+# PhaRaO (w/ GTSAM)
 
 This repo reproduces the code for the paper [PhaRaO: Direct Radar Odometry using Phase Correlation.](https://rpm.snu.ac.kr/publications/yspark-2020-icra.pdf)
-
-In the paper, the original PhaRaO is based on ISAM, however, we adapted the code using ISAM2 in GTSAM
+Although the original paper is based on iSAM, this release integrate the code with gtSAM.
 
 
 ## Prerequisite
