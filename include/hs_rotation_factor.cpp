@@ -11,7 +11,7 @@ PharaoRotFactor::PharaoRotFactor(Key poseKey1, Key poseKey2, double mtheta,
 
 /* ************************************************************************* */
 Vector PharaoRotFactor::evaluateError(const Pose2& pose1, const Pose2& pose2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalMatrixType H1, OptionalMatrixType H2) const {
         double hx = 0.0;
         if(pose2.theta()>M_PI/2 && pose1.theta()<-M_PI/2){
             hx = pose2.theta() - 2*M_PI - pose1.theta();

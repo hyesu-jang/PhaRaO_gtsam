@@ -1,17 +1,23 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/OptionalJacobian.h>
+
+#include <optional>
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam{
-class GTSAM_EXPORT PharaoRotFactor: public NoiseModelFactor2<Pose2, Pose2> {
+class GTSAM_EXPORT PharaoRotFactor: public NoiseModelFactorN<Pose2, Pose2> {
   double mtheta_; ///< X and Y measurements
   typedef PharaoRotFactor This;
-  typedef NoiseModelFactor2<Pose2, Pose2> Base;
+  typedef NoiseModelFactorN<Pose2, Pose2> Base;
 
 public:
+  using Base::evaluateError;
 
   PharaoRotFactor() : mtheta_(0.0) {} /* Default constructor */
 
@@ -20,14 +26,9 @@ public:
 
   ~PharaoRotFactor() override {}
 
-  /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
-
   /** h(x)-z */
   Vector evaluateError(const Pose2& pose1, const Pose2& pose2,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2) const override;
 
   /** return the measured */
   inline double mtheta() const { return mtheta_; }
@@ -40,6 +41,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -48,6 +50,7 @@ private:
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(mtheta_);
   }
+#endif
 };
 
 } // \namespace gtsam

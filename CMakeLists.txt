@@ -75,7 +75,7 @@ catkin_package (
   LIBRARIES ${PROJECT_NAME}
 #  CATKIN_DEPENDS roscpp std_msgs
   CATKIN_DEPENDS cv_bridge eigen_conversions image_transport roscpp rospy std_msgs sensor_msgs pcl_ros pcl_conversions
-  DEPENDS Boost system_lib
+  DEPENDS Boost
 )
 
 ###########
