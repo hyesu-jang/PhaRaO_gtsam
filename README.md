@@ -1,13 +1,12 @@
 
-# PhaRaO with GTSAM
+# PhaRaO (w/ GTSAM)
 
 This repo reproduces the code for the paper [PhaRaO: Direct Radar Odometry using Phase Correlation.](https://rpm.snu.ac.kr/publications/yspark-2020-icra.pdf)
-
-In the paper, the original PhaRaO is based on ISAM, however, we adapted the code using ISAM2 in GTSAM
+Although the original paper is based on iSAM, this release integrate the code with gtSAM.
 
 
 ## Prerequisite
-1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu)
+1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic? (TODO)
 2. [GTSAM](https://gtsam.org/)
 3. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
