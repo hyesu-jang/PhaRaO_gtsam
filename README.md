@@ -6,7 +6,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
 
 
 ## Prerequisite
-1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu)
+1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic? (TODO)
 2. [GTSAM](https://gtsam.org/)
 3. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
