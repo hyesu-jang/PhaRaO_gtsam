@@ -13,11 +13,11 @@ Although the original paper is based on iSAM, this release integrate the code wi
 
    If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines.
 
-   $ cmake .
-   $ ./configure --enable-shared --enable-threads --enable-float
-   $ make
-   $ sudo make install
-   $ sudo cp FFTW3LibraryDepends.cmake /usr/local/lib/cmake/fftw3/
+   $ cmake .  
+   $ ./configure --enable-shared --enable-threads --enable-float  
+   $ make  
+   $ sudo make install  
+   $ sudo cp FFTW3LibraryDepends.cmake /usr/local/lib/cmake/fftw3/  
 
 4. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
 
