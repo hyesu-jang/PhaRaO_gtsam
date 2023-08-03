@@ -19,10 +19,6 @@
 #include <Eigen/Core>
 #include <eigen_conversions/eigen_msg.h>
 
-//#include <isam/isam.h>
-//#include <isam/slam3d.h>
-//#include <user_factors_ys.h>
-
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -81,20 +77,29 @@ private:
 	void KeyFraming();
 	void GraphOptimize();
 
-	void lucy_richardson_deconv(Mat img, int num_iterations, double sigmaG, Mat& result);
-	void calcPSF(Mat& outputImg, Size filterSize, int R);
-	void filter2DFreq(const Mat& inputImg, Mat& outputImg, const Mat& H);
-	void calcWnrFilter(const Mat& input_h_PSF, Mat& output_G, double nsr);
 	void fftshift(const Mat& inputImg, Mat& outputImg);
 	Eigen::Matrix3f createRotationMatrix(double x, double y, double ez);
 	void transformPointCloud(const Eigen::Matrix3f& R, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+	void converToPolar();
 
 private:
 
-    ros::NodeHandle nh;
+    ros::NodeHandle nh_;
     ros::Publisher pub_opt_odom_;
-	ros::Publisher pub_pcd_radar_;
-;
+
+	bool param_isPolarImg_;
+	int param_range_bin_;
+	int param_ang_bin_;
+	int param_scale_;
+
+	double odom_threshold_;
+	double keyf_threshold_;
+
+
+
+    int width_, height_;
+	int p_width_, p_height_;
+
 	nav_msgs::Odometry opt_odom;
 	sensor_msgs::PointCloud2 pcd_radar;
 	geometry_msgs::Pose2D radar_ego;
@@ -105,8 +110,6 @@ private:
 	const double RESOL = 0.059612233;
 	//const double RESOL = 2733/1024;
 
-    int width, height;
-	int p_width, p_height;
 
 	int length;
 

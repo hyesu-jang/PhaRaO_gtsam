@@ -2,22 +2,25 @@
 #include <ros/ros.h>
 #include "radar_odom.h"
 
-radarOdom::radarOdom(ros::NodeHandle nh):nh(nh)
+radarOdom::radarOdom(ros::NodeHandle nh) : nh_(nh)
 {
-    width = 336;
-    height = 336;
+	nh_.getParam("is_polar_img", param_isPolarImg_);
+	nh_.getParam("radar_range_bin", param_range_bin_);
+	nh_.getParam("radar_angular_bin", param_ang_bin_);
+	nh_.getParam("coarse_scale_factor", param_scale_);
+	nh_.getParam("odom_factor_cost_threshold", odom_threshold_);
+	nh_.getParam("keyframe_factor_cost_threshold", keyf_threshold_);
 
-	length = 3360;
-	p_width = length;
-	p_height = 400;
+	width_ 		= floor((double) param_range_bin_ / (double) param_scale_);
+	height_ 	= width_;
+	p_width_ 	= param_range_bin_;
+	p_height_ 	= param_ang_bin_;
 
     initialized = false;
     pub_opt_odom_ = nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
-	pub_pcd_radar_ = nh.advertise<sensor_msgs::PointCloud2>("/pcd_radar", 1000);
 
 	//////////////////GTSAM////////////////////
 	ISAM2Params parameters;
-	//GaussNewtonParams parameters;
     parameters.relinearizeThreshold = 0.01;
     parameters.relinearizeSkip = 1;
     isam2 = new ISAM2(parameters);
@@ -56,7 +59,7 @@ radarOdom::radarOdom(ros::NodeHandle nh):nh(nh)
 void radarOdom::callback(const sensor_msgs::ImageConstPtr& msg)
 {
 	static int cnt = 0;
-	//if (cnt % 3 == 0){
+
 	stamp = msg->header.stamp;
 	stamp_list.push_back(stamp);
 
@@ -96,47 +99,25 @@ void radarOdom::callback(const sensor_msgs::ImageConstPtr& msg)
 
 		initialized = true;
 	}
-//	cv::Mat rt = radonTransform(*(window_list_cart.end()-1), 360);
-	imshow("Coarse cart.",*(window_list_cart.end()-1));
-//	imshow("Sinogram.",rt);
-	//imshow("polar.",img);
-	ros::Time lasttime2=ros::Time::now();
-	bool onoff = OdomFactor();
-	ros::Time currtime2=ros::Time::now();
 
-	ros::Time lasttime3=ros::Time::now();
-	ros::Time currtime3=ros::Time::now();
+	imshow("Coarse cart.",*(window_list_cart.end()-1));
+
+
+	bool onoff = OdomFactor();
+
 	if(onoff) {
-		lasttime3=ros::Time::now();
 		// Keyframing
 		KeyFraming();
-		currtime3=ros::Time::now();
+
 		opt_odom.header.frame_id = "odom";
 		pcd_radar.header.frame_id = "odom";
 		pcd_radar.header.stamp = ros::Time::now();
 		pub_opt_odom_.publish(opt_odom);
 		//cout << pcd_radar << endl;
-		pub_pcd_radar_.publish(pcd_radar);
 		// Graph optimization
 		//GraphOptimize();
 	}
 
-	
-	ros::Duration diff1=currtime1-lasttime1;
-	ros::Duration diff2=currtime2-lasttime2;
-	ros::Duration diff3=currtime3-lasttime3;
-
-	/*
-	writeFile.open("time.txt", ios::app);
-	if(writeFile.is_open()) {
-		writeFile << diff1.toSec() << " " << diff2.toSec() << " " << diff3.toSec() << endl;
-		writeFile.close();
-	}
-	*/
-
-	cout<<"Total Hz : "<< (1.0/(diff1.toSec()+diff2.toSec()+diff3.toSec())) << endl;
-	cout<<"--------------------------------------------" << endl;
-	//}
     waitKey(1);
     cnt++;
 }
@@ -205,61 +186,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr radarOdom::toPointCloud(const cv::Mat& radar
   return cloud;
 }
 
-cv::Mat radarOdom::radonTransform(const Mat& input_image, int num_angles = 360) {
-    // Get image dimensions
-    int rows = input_image.rows;
-    int cols = input_image.cols;
-
-	// Calculate diagonal length of the image and create padding
-    int diagonal = static_cast<int>(ceil(sqrt(rows * rows + cols * cols)));
-    int pad_rows = diagonal - rows;
-    int pad_cols = diagonal - cols;
-
-    // Pad the image with zeros
-    cv::Mat padded_image;
-    cv::copyMakeBorder(input_image, padded_image, pad_rows / 2, pad_rows - pad_rows / 2,
-                       pad_cols / 2, pad_cols - pad_cols / 2, cv::BORDER_CONSTANT, 0);
-
-
-    // Initialize the Radon transform output matrix
-    cv::Mat radon_image = cv::Mat::zeros(num_angles, diagonal, CV_32F);
-
-    // Calculate angles and loop through them
-    float angle_step = 360.0f / num_angles;
-    for (int angle_index = 0; angle_index < num_angles; ++angle_index) {
-        float angle = angle_index * angle_step;
-
-        // Calculate the sin and cos of the angle
-        float sin_angle = sin(angle * CV_PI / 180.0f);
-        float cos_angle = cos(angle * CV_PI / 180.0f);
-
-        // Calculate the center of the image
-        float center_x = cols / 2.0f;
-        float center_y = rows / 2.0f;
-
-        // Loop through all the pixels and calculate the distance to the center
-        for (int row = 0; row < rows; ++row) {
-            for (int col = 0; col < cols; ++col) {
-                float intensity = static_cast<float>(input_image.at<uchar>(row, col));
-                if (intensity == 0) {
-                    continue;
-                }
-
-                // Calculate the distance to the center
-                float distance_x = col - center_x;
-                float distance_y = row - center_y;
-                int projection_index = static_cast<int>(round(distance_x * cos_angle + distance_y * sin_angle) + (diagonal - 1) / 2);
-
-                // Sum the intensity in the corresponding projection index
-                radon_image.at<float>(angle_index, projection_index) += intensity;
-            }
-        }
-    }
-	cv::normalize(radon_image, radon_image, 0, 1, cv::NORM_MINMAX);
-    return radon_image;
-}
-
-
 
 void radarOdom::phase_corr()
 {
@@ -272,11 +198,11 @@ void radarOdom::phase_corr()
 	polar_mutex.unlock();
 
 	cv::Mat polar;
-	cv::resize(radar_image_polar, polar, Size(width, p_height), 0, 0, CV_INTER_NN);	
+	cv::resize(radar_image_polar, polar, Size(width_, p_height_), 0, 0, CV_INTER_NN);	
 
 	cv::Mat resize_cart;
-	itf.warpPolar(polar, resize_cart, Size( width*2,height*2 ),
-				Point2f( width,height ), width, CV_INTER_AREA | CV_WARP_INVERSE_MAP);
+	itf.warpPolar(polar, resize_cart, Size( width_*2,height_*2 ),
+				Point2f( width_,height_ ), width_, CV_INTER_AREA | CV_WARP_INVERSE_MAP);
 
 
 	////////////////////////////////////////////////////////////////////////////
@@ -345,7 +271,7 @@ void radarOdom::phase_corr_fine()
 
 	// Image Downsampling and Polar to Cartesian Module
 	polar_mutex.lock();
-		img(cv::Rect(0, 0, length, p_height)).convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
+		img(cv::Rect(0, 0, length, p_height_)).convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
 	polar_mutex.unlock();
 
 	cv::Mat resize_cart;
@@ -689,15 +615,13 @@ radarOdom::KeyFraming()
 				opt_odom.pose.pose.orientation.x = gtsam_quat.x();
 				opt_odom.pose.pose.orientation.y = gtsam_quat.y();
 				opt_odom.pose.pose.orientation.z = gtsam_quat.z();
-				cout << " Where " << endl;
+
 				pcl::PointCloud<pcl::PointXYZ>::Ptr output_pcd = toPointCloud(img, RESOL);
-				cout << " IS " << endl;
+
 				Eigen::Matrix3f R = createRotationMatrix(prev_pose.translation().x(), prev_pose.translation().y(), prev_pose.rotation().theta());
-				cout << " ERROOR " << endl;
+
         		transformPointCloud(R, output_pcd);
-				cout << " ARGGGGGGGG " << endl;
-				pcl::toROSMsg(*output_pcd, pcd_radar);
-				cout << " HelpME " << endl;
+
 
 				tf2::Quaternion mQ;
 				mQ.setRPY( 0, 0, prev_pose.rotation().theta());
@@ -877,107 +801,8 @@ radarOdom::GraphOptimize()
 	*/
 }
 
-void
-radarOdom::lucy_richardson_deconv(Mat img, int num_iterations, double sigmaG, Mat& result)
-{
-	// Lucy-Richardson Deconvolution Function
-	// input-1 img: NxM matrix image
-	// input-2 num_iterations: number of iterations
-	// input-3 sigma: sigma of point spread function (PSF)
-	// output result: deconvolution result
-	double EPSILON=2.2204e-16;
-	// Window size of PSF
-	int winSize = 1 * sigmaG + 1 ;
 
-	// Initializations
-	Mat Y = img.clone();
-	Mat J1 = img.clone();
-	Mat J2 = img.clone();
-	Mat wI = img.clone(); 
-	Mat imR = img.clone();  
-	Mat reBlurred = img.clone();	
 
-	Mat T1, T2, tmpMat1, tmpMat2;
-	T1 = Mat(img.rows,img.cols, CV_64F, 0.0);
-	T2 = Mat(img.rows,img.cols, CV_64F, 0.0);
-
-	// Lucy-Rich. Deconvolution CORE
-
-	double lambda = 0;
-	for(int j = 0; j < num_iterations; j++) 
-	{		
-		if (j>1) {
-			// calculation of lambda
-			multiply(T1, T2, tmpMat1);
-			multiply(T2, T2, tmpMat2);
-			lambda=sum(tmpMat1)[0] / (sum( tmpMat2)[0]+EPSILON);
-			// calculation of lambda
-		}
-
-		Y = J1 + lambda * (J1-J2);
-		Y.setTo(0, Y < 0);
-
-		// 1)
-		GaussianBlur( Y, reBlurred, Size(winSize,winSize), sigmaG, sigmaG );//applying Gaussian filter 
-		reBlurred.setTo(EPSILON , reBlurred <= 0); 
-
-		// 2)
-		divide(wI, reBlurred, imR);
-		imR = imR + EPSILON;
-
-		// 3)
-		GaussianBlur( imR, imR, Size(winSize,winSize), sigmaG, sigmaG );//applying Gaussian filter 
-
-		// 4)
-		J2 = J1.clone();
-		multiply(Y, imR, J1);
-
-		T2 = T1.clone();
-		T1 = J1 - Y;
-	}
-
-	// output
-	result = J1.clone();
-
-}
-
-void radarOdom::calcPSF(Mat& outputImg, Size filterSize, int R)
-{
-    Mat h(filterSize, CV_32F, Scalar(0));
-    Point point(filterSize.width / 2, filterSize.height / 2);
-    circle(h, point, R, 255, -1, 8);
-    Scalar summa = sum(h);
-    outputImg = h / summa[0];
-}
-void radarOdom::filter2DFreq(const Mat& inputImg, Mat& outputImg, const Mat& H)
-{
-    Mat planes[2] = { Mat_<float>(inputImg.clone()), Mat::zeros(inputImg.size(), CV_32F) };
-    Mat complexI;
-    merge(planes, 2, complexI);
-    dft(complexI, complexI, DFT_SCALE);
-    Mat planesH[2] = { Mat_<float>(H.clone()), Mat::zeros(H.size(), CV_32F) };
-    Mat complexH;
-    merge(planesH, 2, complexH);
-    Mat complexIH;
-    mulSpectrums(complexI, complexH, complexIH, 0);
-    idft(complexIH, complexIH);
-    split(complexIH, planes);
-    outputImg = planes[0];
-}
-void radarOdom::calcWnrFilter(const Mat& input_h_PSF, Mat& output_G, double nsr)
-{
-    Mat h_PSF_shifted;
-    fftshift(input_h_PSF, h_PSF_shifted);
-    Mat planes[2] = { Mat_<float>(h_PSF_shifted.clone()), Mat::zeros(h_PSF_shifted.size(), CV_32F) };
-    Mat complexI;
-    merge(planes, 2, complexI);
-    dft(complexI, complexI);
-    split(complexI, planes);
-    Mat denom;
-    pow(abs(planes[0]), 2, denom);
-    denom += nsr;
-    divide(planes[0], denom, output_G);
-}
 void radarOdom::fftshift(const Mat& inputImg, Mat& outputImg)
 {
     outputImg = inputImg.clone();
@@ -1021,4 +846,16 @@ void radarOdom::transformPointCloud(const Eigen::Matrix3f& R, pcl::PointCloud<pc
         point.x = transformed_point.x();
         point.y = transformed_point.y();
     }
+}
+
+void radarOdom::converToPolar()
+{
+	// Convert to polar if input is cartesian
+	cv::Point2f center(img.cols / 2.0F, img.rows / 2.0F);
+	double maxRadius = cv::norm(cv::Point2f(img.cols - center.x, img.rows - center.y));
+	cv::linearPolar(img, img, center, maxRadius, cv::WARP_FILL_OUTLIERS);
+	// Extract nearest polar points
+	img = img.t();
+	img = polarToNearPol(img);
+	imshow("polar.",img);
 }

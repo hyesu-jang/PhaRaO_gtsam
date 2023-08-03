@@ -14,7 +14,9 @@ int main(int argc, char** argv)
 
     image_transport::ImageTransport it(nh);
   	
-	image_transport::Subscriber sub = it.subscribe("/radar/polar", 1, &radarOdom::callback, &cf);
+    string param_radarSubTopic_;
+    nh.getParam("sub_topic", param_radarSubTopic_);
+	image_transport::Subscriber sub = it.subscribe(param_radarSubTopic_, 1, &radarOdom::callback, &cf);
     //image_transport::Subscriber sub = it.subscribe("/radar_image_inrange", 1, &radarOdom::callback, &cf);
 
     ros::spin();
