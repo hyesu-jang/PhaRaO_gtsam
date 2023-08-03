@@ -11,7 +11,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
 3. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
 
-   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines.
+   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines. Check [this issue](https://github.com/hyesu-jang/PhaRaO_gtsam/issues/2)
 
    $ cmake .  
    $ ./configure --enable-shared --enable-threads --enable-float  
