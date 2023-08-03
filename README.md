@@ -11,7 +11,13 @@ Although the original paper is based on iSAM, this release integrate the code wi
 3. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
 
-   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, don't use the given configure file, build with cmake.
+   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines.
+
+   $ cmake .
+   $ ./configure --enable-shared --enable-threads --enable-float
+   $ make
+   $ sudo make install
+   $ sudo cp FFTW3LibraryDepends.cmake /usr/local/lib/cmake/fftw3/
 
 4. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
 
