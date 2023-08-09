@@ -1,4 +1,4 @@
-#include "fftModule.hpp"
+#include <imgProcess/fftModule.hpp>
 
 fftModule::fftModule(void)
 {
@@ -36,7 +36,8 @@ fftModule::dft(Mat img, Mat* real_out, Mat* imag_out)
     fftwf_destroy_plan(fft_plan);
 }
 
-Mat fftModule::idft(Mat img)
+Mat
+fftModule::idft(Mat img)
 {
     ArrayXXcf xf;
     ArrayXXf x = ArrayXXf((xf.rows()-1)*2, xf.cols());

@@ -65,11 +65,9 @@ private:
 	
     inline cv::Mat log_polar(const cv::Mat);
 	cv::Mat polarToNearPol(const cv::Mat&);
-	cv::Mat radonTransform(const cv::Mat&, int num_angles);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr toPointCloud(const cv::Mat& radar_img, const double &range_resolution);
 
-	void phase_corr();
-	void phase_corr_fine();
+	void phase_corr(cv::Mat img);
+	void phase_corr_fine(cv::Mat img);
 	array<double, 3> PhaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1,
 								 cv::Mat src2, bool flag, array<double, 3> state);
 	void FactorGeneration(int src1, int src2, array<double, 3>& out_state);
@@ -80,17 +78,19 @@ private:
 	void fftshift(const Mat& inputImg, Mat& outputImg);
 	Eigen::Matrix3f createRotationMatrix(double x, double y, double ez);
 	void transformPointCloud(const Eigen::Matrix3f& R, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
-	void converToPolar();
+	cv::Mat convertToPolar(cv::Mat img);
 
 private:
 
     ros::NodeHandle nh_;
     ros::Publisher pub_opt_odom_;
+	ros::Publisher pub_odom_;
 
 	bool param_isPolarImg_;
 	int param_range_bin_;
 	int param_ang_bin_;
 	int param_scale_;
+	int param_sub_;
 
 	double odom_threshold_;
 	double keyf_threshold_;
@@ -100,7 +100,7 @@ private:
     int width_, height_;
 	int p_width_, p_height_;
 
-	nav_msgs::Odometry opt_odom;
+	
 	sensor_msgs::PointCloud2 pcd_radar;
 	geometry_msgs::Pose2D radar_ego;
 	Rot2 key_rot, orien;
@@ -113,7 +113,7 @@ private:
 
 	int length;
 
-    cv::Mat img;
+    
 
     bool initialized;
 

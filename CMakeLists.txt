@@ -16,21 +16,13 @@ foreach (MODULE ${MODULES})
   include (${MODULE})
 endforeach ()
 
-set (HEADER
-  radar_odom.h
-  fftModule.hpp
-  ImageTF.hpp
-  hs_rotation_factor.h
-)
 set (SRC
-#  src/Radar_bts.cpp
-#  src/RadarMapping.cpp
-#  src/Optimize.cpp
+  src/PhaRaO.cpp
+  src/OdomFactor.cpp
+  src/KeyFramingFactor.cpp
 
-  src/radar_odom.cpp
-  src/ImageTF.cpp
-  src/fftModule.cpp
-  include/hs_rotation_factor.cpp
+  src/imgProcess/ImageTF.cpp
+  src/imgProcess/fftModule.cpp
 )
 
 find_package(catkin REQUIRED COMPONENTS
@@ -46,6 +38,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
 )
+
 find_package(Boost 1.65.1 COMPONENTS timer)
 find_package(OpenCV REQUIRED)
 find_package(OpenMP REQUIRED)
