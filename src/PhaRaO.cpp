@@ -1,7 +1,3 @@
-#include <math.h>
-
-#include <ros/ros.h>
-
 #include <PhaRaO.hpp>
 
 PhaRaO::PhaRaO(ros::NodeHandle nh) : nh_(nh)
@@ -78,8 +74,8 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 		img = img.t();
 	polar_mutex.unlock();
 
-	boost::thread* thread_pc = new boost::thread(boost::bind(&radarOdom::phase_corr, this, _1), img);
-	boost::thread* thread_pcf = new boost::thread(boost::bind(&radarOdom::phase_corr_fine, this, _1), img);
+	boost::thread* thread_pc = new boost::thread(boost::bind(&radarOdom::preprocess_coarse, this, _1), img);
+	boost::thread* thread_pcf = new boost::thread(boost::bind(&radarOdom::preprocess_fine, this, _1), img);
 
 	thread_pc->join();
 	thread_pcf->join();
@@ -107,7 +103,7 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 }
 
 void
-PhaRaO::phase_corr(cv::Mat img)
+PhaRaO::preprocess_coarse(cv::Mat img)
 {
 	cv::Mat radar_image_polar;
 	cv::Mat radar_image_cart;
@@ -175,7 +171,7 @@ PhaRaO::phase_corr(cv::Mat img)
 }
 
 void
-PhaRaO::phase_corr_fine(cv::Mat img)
+PhaRaO::preprocess_fine(cv::Mat img)
 {
 	cv::Mat radar_image_polar;
 	cv::Mat radar_image_cart;
@@ -197,73 +193,4 @@ PhaRaO::phase_corr_fine(cv::Mat img)
 	}
 
 	window_list_cart_f.push_back(resize_cart);
-}
-
-array<double, 3>
-PhaRaO::PhaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
-						 bool flag, array<double, 3> state)
-{
-	// flag == true : coarse, flag == false : fine
-	double x,y,theta;
-	double rotation;
-	double phaseCorr;
-	double factor;
-
-	cv::Point2d peakLoc_r;
-
-	if(flag == true) {
-		peakLoc_r = cv::phaseCorrelate(r_src1, r_src2, cv::noArray(), &phaseCorr);
-		rotation = (peakLoc_r.y - init_val[2])*(360.0/(r_src1.rows));
-		theta = rotation*(M_PI/180.0);
-	} else {
-		theta = state.at(2);
-		rotation = theta*180.0/M_PI;
-	}
-
-	cv::Point2f center(src2.cols/2.0, src2.rows/2.0);
-	cv::Mat rot = cv::getRotationMatrix2D(center, rotation, 1.0);
-	cv::Mat derot_cart;
-	cv::warpAffine(src2, derot_cart, rot, src2.size());
-
-	cv::Point2d peakLoc;
-	if(flag == true) {
-		peakLoc = cv::phaseCorrelate(src1, derot_cart, cv::noArray(), &phaseCorr);
-	
-		factor = ratio;
-		x = (init_val[0]-peakLoc.x)*RESOL*factor;
-		y = (init_val[1]-peakLoc.y)*RESOL*factor;
-	} else {
-    	int pixel_x = round(state.at(0)/(ratio * RESOL));
-    	int pixel_y = round(state.at(1)/(ratio * RESOL));
-
-    	if( abs(pixel_x) > 500 || abs(pixel_y) > 500){
-			x = state.at(0);
-			y = state.at(1);
-		} else {
-			peakLoc = itf_f.phaseCorrelateWindow(src1, derot_cart, cv::noArray(), &phaseCorr, state);
-
-			factor = 1.0;
-			x = state.at(0) + (init_val_f[0]-peakLoc.x)*RESOL*factor;
-			y = state.at(1) + (init_val_f[1]-peakLoc.y)*RESOL*factor;
-		}
-	}
-
-	if(initialized == false) {
-		if(flag == true) {
-			init_val[0] = peakLoc.x;
-			init_val[1] = peakLoc.y;
-			init_val[2] = peakLoc_r.y;
-		} else {
-			init_val_f[0] = peakLoc.x;
-			init_val_f[1] = peakLoc.y;
-			init_val_f[2] = peakLoc_r.y;
-		}
-
-		theta = 0;
-		x = 0;
-		y = 0;
-	}
-
-	array<double, 3> d_state = {x, y, theta};
-	return d_state;
 }

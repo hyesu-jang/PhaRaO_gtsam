@@ -1,6 +1,7 @@
-#include <ros/ros.h>
+#pragma once
 
 #include <Eigen/Dense>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

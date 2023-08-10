@@ -1,7 +1,17 @@
-#include <KeyFramingFactor.hpp>
+#include <factor/KeyFramingFactor.hpp>
+
+KeyFramingFactor::KeyFramingFactor()
+{
+
+}
+
+KeyFramingFactor::~KeyFramingFactor()
+{
+	
+}
 
 void
-radarOdom::KeyFraming()
+KeyFramingFactor::KeyFraming()
 {
 	static int cnt = 0;
 	int num = window_list.size()-1;

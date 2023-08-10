@@ -1,4 +1,11 @@
+#pragma once
+
 #include <ros/ros.h>
+
+#include <imgProcess/ImageTF.hpp>
+#include <imgProcess/fftModule.hpp>
+#include <gtsam_custom/hs_rotation_factor.h>
+
 #include <tf2/LinearMath/Quaternion.h>
 
 #include <vector>
@@ -15,8 +22,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 
-#include <Eigen/Dense>
-#include <Eigen/Core>
 #include <eigen_conversions/eigen_msg.h>
 
 #include <gtsam/geometry/Rot2.h>
@@ -30,10 +35,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
-
-#include "ImageTF.hpp"
-#include "fftModule.hpp"
-#include <hs_rotation_factor.h>
 
 #include <geometry_msgs/Pose2D.h>
 #include <nav_msgs/Odometry.h>
@@ -66,11 +67,9 @@ private:
     inline cv::Mat log_polar(const cv::Mat);
 	cv::Mat polarToNearPol(const cv::Mat&);
 
-	void phase_corr(cv::Mat img);
-	void phase_corr_fine(cv::Mat img);
-	array<double, 3> PhaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1,
-								 cv::Mat src2, bool flag, array<double, 3> state);
-	void FactorGeneration(int src1, int src2, array<double, 3>& out_state);
+	void preprocess_coarse(cv::Mat img);
+	void preprocess_fine(cv::Mat img);
+
 	bool OdomFactor();
 	void KeyFraming();
 	void GraphOptimize();
