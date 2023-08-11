@@ -20,86 +20,44 @@ PhaRaO::PhaRaO(ros::NodeHandle nh) : nh_(nh)
 	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
 	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
 
-	//////////////////GTSAM////////////////////
-	ISAM2Params parameters;
-	parameters.relinearizeThreshold = 0.01;
-	parameters.relinearizeSkip = 1;
-	isam2 = new ISAM2(parameters);
+	go_.setInputLists(&window_list_, &window_list_cart_, &window_list_cart_f_,
+						&keyf_list_, &keyf_list_cart_, &keyf_list_cart_f_);
+}
 
-	Eigen::AngleAxisd rollAngle(0.0, Eigen::Vector3d::UnitX());   //M_PI
-	Eigen::AngleAxisd pitchAngle(0.0, Eigen::Vector3d::UnitY());
-	Eigen::AngleAxisd yawAngle(0, Eigen::Vector3d::UnitZ());
-	Eigen::Quaternion<double> init_q = yawAngle * pitchAngle * rollAngle;
+PhaRaO::~PhaRaO()
+{
 
-	key_rot = Rot2(0);
-	orien = Rot2(0);
-	trans_ = Vector2(0,0);
-	now_pose = Vector3(0,0,0);
-	Pose2 prior_pose = gtsam::Pose2(key_rot, gtsam::Point2(.0,.0));
-
-	initial_values.insert(X(pose_count), prior_pose);
-
-	auto prior_noise_model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.01, 0.01, 0.001).finished());
-	auto odom_noise_model = noiseModel::Diagonal::Sigmas((Vector(3) << 1, 1, 1e-1).finished());  // m, m, rad
-	auto odom_noise_model_second = noiseModel::Diagonal::Sigmas((Vector(3) << 1, 1, 1e-1).finished());  // m, m, rad
-	auto odom_noise_model_third = noiseModel::Diagonal::Sigmas((Vector(3) << 1, 1, 1e-1).finished());  // m, m, rad
-	auto key_noise_model = noiseModel::Diagonal::Sigmas((Vector(3) << 1,1,1e-3).finished());
-	auto rot_vector = (Vector(3) << 1000,1000,1e-2).finished();
-	auto rot_noise_model = noiseModel::Diagonal::Sigmas(rot_vector);
-
-	// Add prior factor to the graph.
-	poseGraph->addPrior(X(pose_count), prior_pose, prior_noise_model);
-
-	///////////////////////////////////////////
 }
 
 void
 PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 {
-	static int cnt = 0;
-
 	stamp = msg->header.stamp;
 	stamp_list.push_back(stamp);
 
 	cv::Mat img;
 
 	// Image preprocessing for phase correlation
-	polar_mutex.lock();
-		img = cv_bridge::toCvShare(msg, "mono8")->image;
-		
-		// Convert to polar if input is cartesian
-		if(!param_isPolarImg_)
-			img = convertToPolar(img);
+	img = cv_bridge::toCvShare(msg, "mono8")->image;
+	
+	// Convert to polar if input is cartesian
+	if(!param_isPolarImg_)
+		img = convertToPolar(img);
 
-		img = img.t();
-	polar_mutex.unlock();
+	img = img.t();
 
-	boost::thread* thread_pc = new boost::thread(boost::bind(&radarOdom::preprocess_coarse, this, _1), img);
-	boost::thread* thread_pcf = new boost::thread(boost::bind(&radarOdom::preprocess_fine, this, _1), img);
+	boost::thread* thread_pc = new boost::thread(boost::bind(&PhaRaO::preprocess_coarse, this, _1), img);
+	boost::thread* thread_pcf = new boost::thread(boost::bind(&PhaRaO::preprocess_fine, this, _1), img);
 
 	thread_pc->join();
 	thread_pcf->join();
 	delete thread_pc;
 	delete thread_pcf;
 
-	// initialize
-	if(initialized == false){
-		FactorGeneration(0,1, del_list[0]);
+	go_.optimize();
 
-		initialized = true;
-	}
+	waitKey(1);
 
-	imshow("Coarse cart.",*(window_list_cart.end()-1));
-
-	bool onoff = OdomFactor();
-
-	if(onoff) {
-		// Keyframing
-		KeyFraming();
-	}
-
-    waitKey(1);
-    cnt++;
 }
 
 void
@@ -109,9 +67,7 @@ PhaRaO::preprocess_coarse(cv::Mat img)
 	cv::Mat radar_image_cart;
 
 	// Image Downsampling and Polar to Cartesian Module
-	polar_mutex.lock();
-		img.convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
-	polar_mutex.unlock();
+	img.convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
 
 	cv::Mat polar;
 	cv::resize(radar_image_polar, polar, Size(width_, p_height_), 0, 0, CV_INTER_NN);	
@@ -157,17 +113,16 @@ PhaRaO::preprocess_coarse(cv::Mat img)
 	// Log-Polar Module
 	cv::Mat resize_polar = log_polar(filt_FFT);	
 
+	// Save preprocessed images
+	window_list_.push_back(resize_polar);
+	window_list_cart_.push_back(resize_cart);
+
 	if(initialized == false) {
-		window_list.push_back(resize_polar);
-		window_list_cart.push_back(resize_cart);
-		keyf_list.push_back(resize_polar);
-		keyf_list_cart.push_back(resize_cart);
+		keyf_list_.push_back(resize_polar);
+		keyf_list_cart_.push_back(resize_cart);
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-
-	window_list.push_back(resize_polar);
-	window_list_cart.push_back(resize_cart);
 }
 
 void
@@ -179,18 +134,17 @@ PhaRaO::preprocess_fine(cv::Mat img)
 	int length = param_sub_;
 
 	// Image Downsampling and Polar to Cartesian Module
-	polar_mutex.lock();
-		img(cv::Rect(0, 0, length, p_height_)).convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
-	polar_mutex.unlock();
+	img(cv::Rect(0, 0, length, p_height_)).convertTo(radar_image_polar, CV_32FC1, 1.0/255.0);
 
 	cv::Mat resize_cart;
 	itf_f.warpPolar(radar_image_polar, resize_cart, Size( length*2,length*2 ),
 				Point2f( length,length ), length, CV_INTER_AREA | CV_WARP_INVERSE_MAP);
 
+	// Save preprocessed images
+	window_list_cart_f_.push_back(resize_cart);
+	
 	if(initialized == false) {
-		window_list_cart_f.push_back(resize_cart);
-		keyf_list_cart_f.push_back(resize_cart);
+		keyf_list_cart_f_.push_back(resize_cart);
 	}
 
-	window_list_cart_f.push_back(resize_cart);
 }

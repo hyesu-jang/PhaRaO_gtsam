@@ -1,18 +1,3 @@
-inline cv::Mat
-convertToPolar(cv::Mat img)
-{
-	cv::Point2f center(img.cols / 2.0F, img.rows / 2.0F);
-	double maxRadius = cv::norm(cv::Point2f(img.cols - center.x, img.rows - center.y));
-	cv::linearPolar(img, img, center, maxRadius, cv::WARP_FILL_OUTLIERS);
-	
-	// Extract nearest polar points
-	img = img.t();
-	img = polarToNearPol(img);
-	imshow("polar.",img);
-	
-	return img;
-}
-
 inline cv::Mat 
 log_polar(const cv::Mat img)
 {
@@ -51,6 +36,21 @@ polarToNearPol(const cv::Mat& polar_img) {
         }
     }
     return polar_ref;
+}
+
+inline cv::Mat
+convertToPolar(cv::Mat img)
+{
+	cv::Point2f center(img.cols / 2.0F, img.rows / 2.0F);
+	double maxRadius = cv::norm(cv::Point2f(img.cols - center.x, img.rows - center.y));
+	cv::linearPolar(img, img, center, maxRadius, cv::WARP_FILL_OUTLIERS);
+	
+	// Extract nearest polar points
+	img = img.t();
+	img = polarToNearPol(img);
+	imshow("polar.",img);
+	
+	return img;
 }
 
 inline void

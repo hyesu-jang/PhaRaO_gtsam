@@ -1,40 +1,52 @@
-#include <factor/Factor.hpp>
+#include <factor/AbstractFactor.hpp>
 
-Factor::Factor()
+AbstractFactor::AbstractFactor(std::vector<cv::Mat>* ptr_window_list,
+				std::vector<cv::Mat>* ptr_window_list_cart,
+				std::vector<cv::Mat>* ptr_window_list_cart_f,
+				std::vector<cv::Mat>* ptr_keyf_list,
+				std::vector<cv::Mat>* ptr_keyf_list_cart,
+				std::vector<cv::Mat>* ptr_keyf_list_cart_f)
+				: ptr_window_list_(ptr_window_list),
+				ptr_window_list_cart_(ptr_window_list_cart),
+				ptr_window_list_cart_f_(ptr_window_list_cart_f),
+				ptr_keyf_list_(ptr_keyf_list),
+				ptr_keyf_list_cart_(ptr_keyf_list_cart),
+				ptr_keyf_list_cart_f_(ptr_keyf_list_cart_f)
 {
 
 }
 
-Factor::~Factor()
+AbstractFactor::~AbstractFactor()
 {
 
 }
 
-void
-Factor::factorGeneration(int src1, int src2, std::array<double, 3>& out_state)
+std::array<double, 3>
+AbstractFactor::factorGeneration(int src1, int src2)
 {
     // Coarse Phase Correlation Module
-    auto begin_iter = window_list.begin();
-    auto begin_iter_cart = window_list_cart.begin();
+    auto begin_iter = ptr_window_list_->begin();
+    auto begin_iter_cart = ptr_window_list_cart_->begin();
 
     std::array<double, 3> state = {0,0,0};
-    std::array<double, 3> cd_state = PhaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
+    std::array<double, 3> cd_state = phaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
                                     *(begin_iter_cart+src1), *(begin_iter_cart+src2), true, state);
 
     // Fine Phase Correlation Module
-    begin_iter_cart = window_list_cart_f.begin();
+    begin_iter_cart = ptr_window_list_cart_f_->begin();
 
-    std::array<double, 3> fd_state = PhaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
+    std::array<double, 3> fd_state = phaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
                                     *(begin_iter_cart+src1), *(begin_iter_cart+src2), false, cd_state);
 
-    polar_mutex.lock();
-        std::copy(fd_state.begin(), fd_state.end(), out_state.begin());
-    polar_mutex.unlock();
+	std::array<double, 3> out_state;
+    std::copy(fd_state.begin(), fd_state.end(), out_state.begin());
+
+	return out_state;
 }
 
 
 std::array<double, 3>
-Factor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
+AbstractFactor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
 					bool flag, std::array<double, 3> state)
 {
 	// flag == true : coarse, flag == false : fine
@@ -98,6 +110,6 @@ Factor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
 		y = 0;
 	}
 
-	array<double, 3> d_state = {x, y, theta};
+	std::array<double, 3> d_state = {x, y, theta};
 	return d_state;
 }

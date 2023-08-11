@@ -9,5 +9,5 @@ class OdomFactor : public Factor
 		~OdomFactor();
 
     protected:
-        bool factorGeneration();
+
 };

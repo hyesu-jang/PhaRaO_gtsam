@@ -19,9 +19,10 @@ endforeach ()
 set (SRC
   src/PhaRaO.cpp
   
-  src/factor/Factor.cpp
-  src/factor/OdomFactor.cpp
-  src/factor/KeyFramingFactor.cpp
+  src/factor/GraphOptimizer.cpp
+  src/factor/AbstractFactor.cpp
+  # src/factor/OdomFactor.cpp
+  # src/factor/KeyFramingFactor.cpp
 
   src/imgProcess/ImageTF.cpp
   src/imgProcess/fftModule.cpp

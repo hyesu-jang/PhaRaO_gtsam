@@ -11,7 +11,7 @@ OdomFactor::~OdomFactor()
 }
 
 bool
-OdomFactor::factorGeneration()
+OdomFactor::calcOdom()
 {
 	// Phase correlation (coarse to fine)
 	int num = window_list.size() - 1;
@@ -31,9 +31,9 @@ OdomFactor::factorGeneration()
 		cout << "filtering : " << cost << ", " << o_theta/M_PI*180.0 << ", " << o_yx << endl;
 
 		if(norm < RESOL){		// Too close to caluculate odom
-			window_list.erase(window_list.end()-1);
-			window_list_cart.erase(window_list_cart.end()-1);
-			window_list_cart_f.erase(window_list_cart_f.end()-1);
+			window_list_.erase(window_list.end()-1);
+			window_list_cart_.erase(window_list_cart.end()-1);
+			window_list_cart_f_.erase(window_list_cart_f.end()-1);
 			num--;
 			stamp_list.erase(stamp_list.end()-1);
 
@@ -80,9 +80,9 @@ OdomFactor::factorGeneration()
 		}
 	}
 
-	window_list.erase(window_list.end()-1);
-	window_list_cart.erase(window_list_cart.end()-1);
-	window_list_cart_f.erase(window_list_cart_f.end()-1);
+	window_list_.erase(window_list.end()-1);
+	window_list_cart_.erase(window_list_cart.end()-1);
+	window_list_cart_f_.erase(window_list_cart_f.end()-1);
 	num--;
 	stamp_list.erase(stamp_list.end()-1);
 
