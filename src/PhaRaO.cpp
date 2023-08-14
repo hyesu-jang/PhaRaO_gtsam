@@ -8,20 +8,17 @@ PhaRaO::PhaRaO(ros::NodeHandle nh) : nh_(nh)
 
 	nh_.getParam("coarse_scale_factor", param_scale_);
 	nh_.getParam("sub_img_size", param_sub_);
-	nh_.getParam("odom_factor_cost_threshold", odom_threshold_);
-	nh_.getParam("keyframe_factor_cost_threshold", keyf_threshold_);
 
 	width_ 		= floor((double) param_range_bin_ / (double) param_scale_);
 	height_ 	= width_;
 	p_width_ 	= param_range_bin_;
 	p_height_ 	= param_ang_bin_;
 
-	initialized = false;
 	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
 	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
 
-	go_.setInputLists(&window_list_, &window_list_cart_, &window_list_cart_f_,
-						&keyf_list_, &keyf_list_cart_, &keyf_list_cart_f_);
+	dc_ = &ddc_;
+	go_ = new GraphOptimizer(nh_, dc_);
 }
 
 PhaRaO::~PhaRaO()
@@ -33,12 +30,10 @@ void
 PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 {
 	stamp = msg->header.stamp;
-	stamp_list.push_back(stamp);
-
-	cv::Mat img;
+	dc_->stamp_list.push_back(stamp);
 
 	// Image preprocessing for phase correlation
-	img = cv_bridge::toCvShare(msg, "mono8")->image;
+	cv::Mat img = cv_bridge::toCvShare(msg, "mono8")->image;
 	
 	// Convert to polar if input is cartesian
 	if(!param_isPolarImg_)
@@ -46,15 +41,26 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 
 	img = img.t();
 
-	boost::thread* thread_pc = new boost::thread(boost::bind(&PhaRaO::preprocess_coarse, this, _1), img);
-	boost::thread* thread_pcf = new boost::thread(boost::bind(&PhaRaO::preprocess_fine, this, _1), img);
-
+	boost::thread* thread_pc = new boost::thread(&PhaRaO::preprocess_coarse, this, img);
+	boost::thread* thread_pcf = new boost::thread(&PhaRaO::preprocess_fine, this, img);
+	ROS_WARN("1");
 	thread_pc->join();
 	thread_pcf->join();
 	delete thread_pc;
 	delete thread_pcf;
+	ROS_WARN("2");
+	go_->optimize();
 
-	go_.optimize();
+	// nav_msgs::Odometry odom;
+	// odom.header.frame_id = "odom";
+	// odom.pose.pose.position.x = new_odom.translation().x();
+	// odom.pose.pose.position.y = new_odom.translation().y();
+	// odom.pose.pose.position.z = 0;
+	// odom.pose.pose.orientation.w = 1;
+	// odom.pose.pose.orientation.x = 0;
+	// odom.pose.pose.orientation.y = 0;
+	// odom.pose.pose.orientation.z = 0;
+	// pub_odom_.publish(odom);
 
 	waitKey(1);
 
@@ -78,7 +84,6 @@ PhaRaO::preprocess_coarse(cv::Mat img)
 
 	////////////////////////////////////////////////////////////////////////////
 	// FFT Module (OpenCV)
-
 	cv::Mat padded;
 	int m = getOptimalDFTSize( resize_cart.rows );
 	int n = getOptimalDFTSize( resize_cart.cols );
@@ -103,7 +108,7 @@ PhaRaO::preprocess_coarse(cv::Mat img)
 	////////////////////////////////////////////////////////////////////////////
 
 	// HPF Module
-	ArrayXXf filter = itf.highpassfilt(magI.size(), initialized);
+	ArrayXXf filter = itf.highpassfilt(magI.size(), dc_->initialized);
 	MatrixXf filter_mt = filter.matrix();
 	cv::Mat filter_cv;
 	eigen2cv(filter_mt, filter_cv);
@@ -114,12 +119,12 @@ PhaRaO::preprocess_coarse(cv::Mat img)
 	cv::Mat resize_polar = log_polar(filt_FFT);	
 
 	// Save preprocessed images
-	window_list_.push_back(resize_polar);
-	window_list_cart_.push_back(resize_cart);
+	dc_->window_list.push_back(resize_polar);
+	dc_->window_list_cart.push_back(resize_cart);
 
-	if(initialized == false) {
-		keyf_list_.push_back(resize_polar);
-		keyf_list_cart_.push_back(resize_cart);
+	if(dc_->initialized == false) {
+		dc_->keyf_list.push_back(resize_polar);
+		dc_->keyf_list_cart.push_back(resize_cart);
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -141,10 +146,10 @@ PhaRaO::preprocess_fine(cv::Mat img)
 				Point2f( length,length ), length, CV_INTER_AREA | CV_WARP_INVERSE_MAP);
 
 	// Save preprocessed images
-	window_list_cart_f_.push_back(resize_cart);
+	dc_->window_list_cart_f.push_back(resize_cart);
 	
-	if(initialized == false) {
-		keyf_list_cart_f_.push_back(resize_cart);
+	if(dc_->initialized == false) {
+		dc_->keyf_list_cart_f.push_back(resize_cart);
 	}
 
 }

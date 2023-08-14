@@ -1,4 +1,4 @@
-#include <hs_rotation_factor.h>
+#include <gtsam_custom/hs_rotation_factor.h>
 
 namespace gtsam {
 

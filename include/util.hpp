@@ -1,3 +1,5 @@
+#pragma once
+
 inline cv::Mat 
 log_polar(const cv::Mat img)
 {

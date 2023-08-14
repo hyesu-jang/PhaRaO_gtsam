@@ -1,13 +1,17 @@
 #pragma once
 
-#include <factor/Factor.hpp>
+#include <factor/AbstractFactor.hpp>
 
-class OdomFactor : public Factor
+class OdomFactor : public AbstractFactor
 {
 	public:
-		OdomFactor();
+		OdomFactor(DataContainer* dc);
 		~OdomFactor();
+		bool calcOdom();
 
-    protected:
+	protected:
+		DataContainer* dc_;
+		double threshold_;
+
 
 };

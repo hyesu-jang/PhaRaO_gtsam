@@ -608,7 +608,7 @@ Point2d ImageTF::weightedCentroid(InputArray _src, cv::Point peakLocation, cv::S
     if(response)
         *response = sumIntensity;
 
-    sumIntensity += DBL_EPSILON; // prevent div0 problems...
+    sumIntensity += DBL_EPSILON;
 
     centroid.x /= sumIntensity;
     centroid.y /= sumIntensity;

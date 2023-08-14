@@ -20,9 +20,8 @@ set (SRC
   src/PhaRaO.cpp
   
   src/factor/GraphOptimizer.cpp
-  src/factor/AbstractFactor.cpp
-  # src/factor/OdomFactor.cpp
-  # src/factor/KeyFramingFactor.cpp
+  src/factor/FactorConstructor.cpp
+  src/gtsam_custom/hs_rotation_factor.cpp
 
   src/imgProcess/ImageTF.cpp
   src/imgProcess/fftModule.cpp

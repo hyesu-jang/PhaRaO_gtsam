@@ -13,6 +13,7 @@
         <param name="sub_img_size" value="500" />
         <param name="odom_factor_cost_threshold" value="0.85" />
         <param name="keyframe_factor_cost_threshold" value="0.9" />
+        <param name="window_size" value="5" />
     </node>
 
 </launch>

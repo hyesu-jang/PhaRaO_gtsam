@@ -30,7 +30,7 @@
 using namespace std;
 using namespace Eigen;
 
-#define NUM 5
+
 
 class PhaRaO
 {
@@ -52,63 +52,31 @@ class PhaRaO
 		ros::Publisher pub_opt_odom_;
 		ros::Publisher pub_odom_;
 
-		bool param_isPolarImg_;
-		int param_range_bin_;
-		int param_ang_bin_;
-		int param_scale_;
-		int param_sub_;
+		bool param_isPolarImg_ = true;
+		int param_range_bin_ = 3360;
+		int param_ang_bin_ = 400;
+		int param_scale_ = 10;
+		int param_sub_ = 500;
 
-		double odom_threshold_;
-		double keyf_threshold_;
+
 
 
 
 		int width_, height_;
 		int p_width_, p_height_;
 
-
-		GraphOptimizer go_;
-		ImageTF itf_temp;
-		
-		sensor_msgs::PointCloud2 pcd_radar;
-		geometry_msgs::Pose2D radar_ego;
-		
-
-		boost::mutex polar_mutex;
-
-
-
-
+		DataContainer ddc_;
+		DataContainer* dc_;
+		GraphOptimizer* go_;
+		ImageTF itf, itf_f;
+				
 		int length;
-
 		
+		geometry_msgs::Pose2D radar_ego;
 
-		bool initialized;
-
-		ofstream writeFile;
 		fftModule fftM;
 		fftModule fftM_f;
 
-		vector<cv::Mat> window_list_;
-		vector<cv::Mat> window_list_cart_;
-		vector<cv::Mat> window_list_cart_f_;
-
-		vector<cv::Mat> keyf_list_;
-		vector<cv::Mat> keyf_list_cart_;
-		vector<cv::Mat> keyf_list_cart_f_;
-
-		vector<ros::Time> stamp_list;
-		vector<ros::Time> sstamp_list;
-		vector<ros::Time> kstamp_list;
-
-		array<array<double, 3>, NUM> var_list;
-		array<array<double, 3>, NUM> odom_list;
-
-		array<int, NUM> cost_idx;
-		array<int, NUM> cost_iter;
-		array<double, NUM> atv;
-		double norm_v[NUM];
-		double norm_w[NUM];
 
 
 

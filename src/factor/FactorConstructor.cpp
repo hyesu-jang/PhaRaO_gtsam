@@ -1,39 +1,29 @@
-#include <factor/AbstractFactor.hpp>
+#include <factor/FactorConstructor.hpp>
 
-AbstractFactor::AbstractFactor(std::vector<cv::Mat>* ptr_window_list,
-				std::vector<cv::Mat>* ptr_window_list_cart,
-				std::vector<cv::Mat>* ptr_window_list_cart_f,
-				std::vector<cv::Mat>* ptr_keyf_list,
-				std::vector<cv::Mat>* ptr_keyf_list_cart,
-				std::vector<cv::Mat>* ptr_keyf_list_cart_f)
-				: ptr_window_list_(ptr_window_list),
-				ptr_window_list_cart_(ptr_window_list_cart),
-				ptr_window_list_cart_f_(ptr_window_list_cart_f),
-				ptr_keyf_list_(ptr_keyf_list),
-				ptr_keyf_list_cart_(ptr_keyf_list_cart),
-				ptr_keyf_list_cart_f_(ptr_keyf_list_cart_f)
+FactorConstructor::FactorConstructor(DataContainer* dc)
+				: dc_(dc)
 {
 
 }
 
-AbstractFactor::~AbstractFactor()
+FactorConstructor::~FactorConstructor()
 {
 
 }
 
 std::array<double, 3>
-AbstractFactor::factorGeneration(int src1, int src2)
+FactorConstructor::factorGeneration(int src1, int src2)
 {
     // Coarse Phase Correlation Module
-    auto begin_iter = ptr_window_list_->begin();
-    auto begin_iter_cart = ptr_window_list_cart_->begin();
+    auto begin_iter = dc_->window_list.begin();
+    auto begin_iter_cart = dc_->window_list_cart.begin();
 
     std::array<double, 3> state = {0,0,0};
     std::array<double, 3> cd_state = phaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
                                     *(begin_iter_cart+src1), *(begin_iter_cart+src2), true, state);
 
     // Fine Phase Correlation Module
-    begin_iter_cart = ptr_window_list_cart_f_->begin();
+    begin_iter_cart = dc_->window_list_cart_f.begin();
 
     std::array<double, 3> fd_state = phaseCorr2D(*(begin_iter+src1), *(begin_iter+src2),
                                     *(begin_iter_cart+src1), *(begin_iter_cart+src2), false, cd_state);
@@ -46,7 +36,7 @@ AbstractFactor::factorGeneration(int src1, int src2)
 
 
 std::array<double, 3>
-AbstractFactor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
+FactorConstructor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Mat src2,
 					bool flag, std::array<double, 3> state)
 {
 	// flag == true : coarse, flag == false : fine
@@ -86,7 +76,7 @@ AbstractFactor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Ma
 			x = state.at(0);
 			y = state.at(1);
 		} else {
-			peakLoc = itf_f.phaseCorrelateWindow(src1, derot_cart, cv::noArray(), &phaseCorr, state);
+			peakLoc = itf.phaseCorrelateWindow(src1, derot_cart, cv::noArray(), &phaseCorr, state);
 
 			factor = 1.0;
 			x = state.at(0) + (init_val_f[0]-peakLoc.x)*RESOL*factor;
@@ -94,7 +84,7 @@ AbstractFactor::phaseCorr2D(cv::Mat r_src1, cv::Mat r_src2, cv::Mat src1, cv::Ma
 		}
 	}
 
-	if(initialized == false) {
+	if(dc_->initialized == false) {
 		if(flag == true) {
 			init_val[0] = peakLoc.x;
 			init_val[1] = peakLoc.y;
