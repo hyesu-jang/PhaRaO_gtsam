@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Eigen/Geometry>
+#include <nav_msgs/Odometry.h>
+
 #include <factor/FactorConstructor.hpp>
 #include <gtsam_custom/hs_rotation_factor.h>
 
@@ -17,6 +20,12 @@ class GraphOptimizer : public FactorConstructor
 		void optimize();
 
 	protected:
+		void publishOdom(Pose2 pose, Eigen::Quaterniond quat);
+		void publishOptOdom(Pose2 pose, Eigen::Quaterniond quat);
+
+		ros::Publisher pub_opt_odom_;
+		ros::Publisher pub_odom_;
+
 		ros::NodeHandle nh_;
 		DataContainer* dc_;
 
@@ -34,7 +43,6 @@ class GraphOptimizer : public FactorConstructor
 		//ISAM2Params parameters;
 		GaussNewtonParams parameters;
 		Values initial_values;
-		Values odom_result;
 		Vector2 trans_ ;
 		NonlinearFactorGraph* poseGraph = new NonlinearFactorGraph();
 		Pose2 prev_pose, prop_pose;
@@ -44,18 +52,17 @@ class GraphOptimizer : public FactorConstructor
 		noiseModel::Diagonal::shared_ptr key_noise_model_;
 		noiseModel::Diagonal::shared_ptr rot_noise_model_;
 
+		Vector3 current_pose;
+		Vector3 base_pose;
+
 		int pose_count = 0;
 		bool correlation_found = false;
 		int key_node = 0;
 		int window_loop =0;
 		std::vector<int> pose_node_nums;
-		Vector3 now_pose;
-		Vector3 base_pose;
 		std::vector<Vector3> pose_values;
 
 		Eigen::Matrix3d m = (Eigen::Matrix3d() << pow(1.0,2), 0, 0, 0, pow(1.0,2), 0, 0, 0, pow(0.2,2)).finished();
 		Eigen::Matrix3d n = (Eigen::Matrix3d() << pow(1.0,2), 0, 0, 0, pow(1.0,2), 0, 0, 0, pow(1.0,2)).finished();
-
-		Rot2 key_rot, orien;
 
 };

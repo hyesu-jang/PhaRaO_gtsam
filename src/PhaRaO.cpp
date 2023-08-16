@@ -14,9 +14,7 @@ PhaRaO::PhaRaO(ros::NodeHandle nh) : nh_(nh)
 	p_width_ 	= param_range_bin_;
 	p_height_ 	= param_ang_bin_;
 
-	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
-	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
-
+	ddc_.initialized = false;
 	dc_ = &ddc_;
 	go_ = new GraphOptimizer(nh_, dc_);
 }
@@ -29,7 +27,7 @@ PhaRaO::~PhaRaO()
 void
 PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 {
-	stamp = msg->header.stamp;
+	ros::Time stamp = msg->header.stamp;
 	dc_->stamp_list.push_back(stamp);
 
 	// Image preprocessing for phase correlation
@@ -43,12 +41,12 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 
 	boost::thread* thread_pc = new boost::thread(&PhaRaO::preprocess_coarse, this, img);
 	boost::thread* thread_pcf = new boost::thread(&PhaRaO::preprocess_fine, this, img);
-	ROS_WARN("1");
+
 	thread_pc->join();
 	thread_pcf->join();
 	delete thread_pc;
 	delete thread_pcf;
-	ROS_WARN("2");
+
 	go_->optimize();
 
 	// nav_msgs::Odometry odom;

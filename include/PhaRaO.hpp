@@ -18,7 +18,6 @@
 #include <cv_bridge/cv_bridge.h>
 
 #include <geometry_msgs/Pose2D.h>
-#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/PointCloud2.h>
 
 #include <pcl/point_cloud.h>
@@ -49,18 +48,12 @@ class PhaRaO
 	private:
 
 		ros::NodeHandle nh_;
-		ros::Publisher pub_opt_odom_;
-		ros::Publisher pub_odom_;
 
 		bool param_isPolarImg_ = true;
 		int param_range_bin_ = 3360;
 		int param_ang_bin_ = 400;
 		int param_scale_ = 10;
 		int param_sub_ = 500;
-
-
-
-
 
 		int width_, height_;
 		int p_width_, p_height_;
@@ -72,16 +65,8 @@ class PhaRaO
 				
 		int length;
 		
-		geometry_msgs::Pose2D radar_ego;
-
 		fftModule fftM;
 		fftModule fftM_f;
-
-
-
-
-		ros::Time stamp;
-
 
 		double prev_v = 0.0;
 		double prev_w = 0.0;
