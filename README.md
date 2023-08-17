@@ -13,15 +13,24 @@ Although the original paper is based on iSAM, this release integrate the code wi
 4. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
 
-   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines. Check [this issue](https://github.com/hyesu-jang/PhaRaO_gtsam/issues/2)
-
+   We need normal installation followed by float option installed. We need both `FFTW3Config.cmake` file and `FFTW3fConfig.cmake`. So first compile without float option.
+   
    $ cmake .  
    $ ./configure --enable-shared --enable-threads --enable-float  
    $ make  
-   $ sudo make install  
+   $ sudo make install
+
+   Then, do the same thing with the float option on.
+   $ cmake .  
+   $ ./configure --enable-shared --enable-threads --enable-float  
+   $ make  
+   $ sudo make install 
+   
+   If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines. Check [this issue](https://github.com/hyesu-jang/PhaRaO_gtsam/issues/2)
+ 
    $ sudo cp FFTW3LibraryDepends.cmake /usr/local/lib/cmake/fftw3/  
 
-5. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
+6. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
 
 ## Start
 1. Generate your own catkin workspace & Go to your src folder
