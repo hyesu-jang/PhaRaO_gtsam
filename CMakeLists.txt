@@ -46,7 +46,7 @@ find_package(OpenCV REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(FFTW3 REQUIRED)
+#find_package(FFTW3 REQUIRED)
 
 # Find GTSAM components
 find_package(GTSAM REQUIRED) # Uses installed package
