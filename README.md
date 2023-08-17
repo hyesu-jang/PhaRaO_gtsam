@@ -8,7 +8,9 @@ Although the original paper is based on iSAM, this release integrate the code wi
 ## Prerequisite
 1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic? (TODO)
 2. [GTSAM](https://gtsam.org/)
-3. [FFTW3](https://www.fftw.org/download.html)
+   Use develop branch.
+   
+4. [FFTW3](https://www.fftw.org/download.html)
    (fftw-3.3.10 version is recommended for ubuntu 20.04)
 
    If **_FFTW3LibraryDepend.cmake_** file-related error occurred, try the below lines. Check [this issue](https://github.com/hyesu-jang/PhaRaO_gtsam/issues/2)
@@ -19,7 +21,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
    $ sudo make install  
    $ sudo cp FFTW3LibraryDepends.cmake /usr/local/lib/cmake/fftw3/  
 
-4. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
+5. Download Radar Data samples (ex. [MulRan](https://sites.google.com/view/mulran-pr/dataset))
 
 ## Start
 1. Generate your own catkin workspace & Go to your src folder
