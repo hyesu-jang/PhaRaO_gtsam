@@ -32,6 +32,8 @@ class GraphOptimizer : public FactorConstructor
 
 		double odom_threshold_ = 0.85;
 		double keyf_threshold_ = 0.9;
+		double vel_threshold_ = 20.0;
+		double angvel_threshold_ = 7.0;
 
 		std::array<int, NUM> cost_idx;
 		std::array<int, NUM> cost_iter;
@@ -41,14 +43,13 @@ class GraphOptimizer : public FactorConstructor
 
 		// GTSAM
 		ISAM2 *isam2;
-		//ISAM2Params parameters;
-		GaussNewtonParams parameters;
 		Values initial_values;
 		Vector2 trans_ ;
 		NonlinearFactorGraph* poseGraph = new NonlinearFactorGraph();
 		Pose2 prev_pose, prop_pose;
 
 		noiseModel::Diagonal::shared_ptr prior_noise_model_;
+		noiseModel::Diagonal::shared_ptr loose_prior_noise_model_;
 		noiseModel::Diagonal::shared_ptr odom_noise_model_;
 		noiseModel::Diagonal::shared_ptr key_noise_model_;
 		noiseModel::Diagonal::shared_ptr rot_noise_model_;

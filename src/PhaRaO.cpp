@@ -49,17 +49,6 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 
 	go_->optimize();
 
-	// nav_msgs::Odometry odom;
-	// odom.header.frame_id = "odom";
-	// odom.pose.pose.position.x = new_odom.translation().x();
-	// odom.pose.pose.position.y = new_odom.translation().y();
-	// odom.pose.pose.position.z = 0;
-	// odom.pose.pose.orientation.w = 1;
-	// odom.pose.pose.orientation.x = 0;
-	// odom.pose.pose.orientation.y = 0;
-	// odom.pose.pose.orientation.z = 0;
-	// pub_odom_.publish(odom);
-
 	waitKey(1);
 
 }

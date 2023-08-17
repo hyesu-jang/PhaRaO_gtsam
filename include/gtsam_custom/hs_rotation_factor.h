@@ -39,6 +39,7 @@ public:
   /** print contents */
   void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
+
 private:
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION

@@ -12,16 +12,18 @@ PharaoRotFactor::PharaoRotFactor(Key poseKey1, Key poseKey2, double mtheta,
 /* ************************************************************************* */
 Vector PharaoRotFactor::evaluateError(const Pose2& pose1, const Pose2& pose2,
     OptionalMatrixType H1, OptionalMatrixType H2) const {
-        double hx = 0.0;
-        if(pose2.theta()>M_PI/2 && pose1.theta()<-M_PI/2){
-            hx = pose2.theta() - 2*M_PI - pose1.theta();
-        }
-        else if (pose2.theta()<-M_PI/2 && pose1.theta()>M_PI/2){
-            hx = pose2.theta() - pose1.theta() + 2*M_PI;
-        }
-        else{
-            hx = pose2.theta() - pose1.theta();
-        }
+
+  double hx = .0;
+  if(pose2.theta()>M_PI/2 && pose1.theta()<-M_PI/2){
+      hx = pose2.theta() - 2*M_PI - pose1.theta();
+  }
+  else if (pose2.theta()<-M_PI/2 && pose1.theta()>M_PI/2){
+      hx = pose2.theta() - pose1.theta() + 2*M_PI;
+  }
+  else{
+      hx = pose2.theta() - pose1.theta();
+  }
+
   if (H1) {
     *H1 = Matrix::Zero(1,3);
     (*H1)(0, 2) = -1.0;

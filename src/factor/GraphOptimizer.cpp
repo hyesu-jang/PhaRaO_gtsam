@@ -6,6 +6,8 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 	// ROS
 	nh_.getParam("odom_factor_cost_threshold", odom_threshold_);
 	nh_.getParam("keyframe_factor_cost_threshold", keyf_threshold_);
+	nh_.getParam("max_velocity_threshold", vel_threshold_);
+	nh_.getParam("max_angular_velocity_threshold", angvel_threshold_);
 
 	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
 	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
@@ -25,9 +27,10 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 
 	initial_values.insert(X(pose_count), prior_pose);
 
-	prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 0.01, 0.01, 0.001).finished());
-	odom_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1, 1, 1e-1).finished());  // m, m, rad
-	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-2).finished());
+	prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-4, 1e-4, 1e-4).finished());
+	loose_prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e2, 1e2, 1e2).finished());
+	odom_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-1, 1e-2, 1e-2).finished());  // m, m, rad
+	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-3).finished());
 	rot_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-2).finished());
 
 	// Add prior factor to the graph.
@@ -88,8 +91,8 @@ GraphOptimizer::generateOdomFactor()
 		cout << "[" << pose_count+1-ii << " & " << pose_count+1 << "] Cost: " << cost 
 			<< ", o_theta: " << o_theta/M_PI*180.0 << ", o_yx: " << o_yx << endl;
 
-		if(norm < RESOL){ // There is no change.
-			ROS_WARN("Negligible Change.");
+		if(norm < RESOL ){ // There is no change.
+			ROS_WARN("Poor Measurement.");
 			dc_->window_list.erase(dc_->window_list.end()-1);
 			dc_->window_list_cart.erase(dc_->window_list_cart.end()-1);
 			dc_->window_list_cart_f.erase(dc_->window_list_cart_f.end()-1);
@@ -194,6 +197,7 @@ GraphOptimizer::regenerateOdomFactor()
 			Pose2 prop_pose = gtsam::Pose2(orien, prop_point);
 
 			Pose2 odom_delta = gtsam::Pose2(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1], dc_->odom_list[num-1][2]); // x,y,theta
+			// poseGraph->addPrior(X(key_node+num), prop_pose, loose_prior_noise_model_);
 			poseGraph->add(BetweenFactor<Pose2>(X(key_node+num-ii), X(key_node+num), odom_delta, odom_noise_model_));
 
 			cout << "Current pose number: " << key_node+num << endl;
@@ -305,10 +309,11 @@ GraphOptimizer::generateKeyfFactor()
 		// Constraints to decide keyframe
 		// Paper II.C.2)
 		bool constraint1 = (atv[num-1] < atv[num-2]) && (atv[num-1] < keyf_threshold_*atv[cost_idx[num-1]]);
-		bool constraint2 = (num > 4);
-		bool constraint3 = (norm_v[0] > 30.0);
+		bool constraint2 = (num > 3);
+		bool constraint3 = (norm_v[0] > vel_threshold_);
+		bool constraint4 = (norm_w[0] > angvel_threshold_);
 
-		if( constraint1 || constraint2 || constraint3 ) {
+		if( constraint1 || constraint2 || constraint3 || constraint4) {
 			int i = num-2;
 			int p_ind = num-2;
 
@@ -340,6 +345,7 @@ GraphOptimizer::generateKeyfFactor()
 
 			int p_size = num;
 			if(p_size > 2) {
+				poseGraph->print();
 
 				isam2->update(*poseGraph, initial_values);
 				isam2->update();
@@ -364,7 +370,6 @@ GraphOptimizer::generateKeyfFactor()
 
 				key_node = new_key_node;
 				window_loop += num;
-			
 
 				// DataContainer Rearranging
 				std::vector<cv::Mat> temp_window_list;
@@ -415,6 +420,7 @@ GraphOptimizer::generateKeyfFactor()
 
 				cnt++;
 			}
+		
 		}
 	}
 
