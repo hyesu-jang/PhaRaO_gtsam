@@ -21,6 +21,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
    $ sudo make install
 
    Then, do the same thing with the float option on.
+   
    $ cmake .  
    $ ./configure --enable-shared --enable-threads --enable-float  
    $ make  
