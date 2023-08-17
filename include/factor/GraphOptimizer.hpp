@@ -16,6 +16,7 @@ class GraphOptimizer : public FactorConstructor
 		GraphOptimizer(ros::NodeHandle nh, DataContainer* dc);
 		~GraphOptimizer();
 		bool generateOdomFactor();
+		void regenerateOdomFactor();
 		void generateKeyfFactor();
 		void optimize();
 

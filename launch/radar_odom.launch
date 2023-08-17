@@ -11,8 +11,8 @@
         <!-- User custom parameters -->
         <param name="coarse_scale_factor" value="10" />
         <param name="sub_img_size" value="500" />
-        <param name="odom_factor_cost_threshold" value="0.5" />
-        <param name="keyframe_factor_cost_threshold" value="0.5" />
+        <param name="odom_factor_cost_threshold" value="0.7" />
+        <param name="keyframe_factor_cost_threshold" value="0.95" />
     </node>
 
 </launch>
