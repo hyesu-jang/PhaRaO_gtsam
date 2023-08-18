@@ -55,10 +55,12 @@ Although the original paper is based on iSAM, this release integrate the code wi
     ~~~
     roslaunch file_player file_player.launch
     ~~~
-5. Run PhaRaO node (It will be alternated with the launch file later)
+5. Run PhaRaO node and rviz
     ~~~
     rosrun pharao_gtsam pharao_gtsam_node
+    rviz -d ~/catkin_ws/src/PhaRaO_gtsam/rviz/odom.rviz
     ~~~
+5-1. Or run by using launch file (TODO)
 
 ## Parameter Changing
 If your bag file fails to generate odometry, revise the parameter in the file **_radar_odom.cpp_**
