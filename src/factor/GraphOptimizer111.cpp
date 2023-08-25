@@ -19,7 +19,7 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 
 	Eigen::AngleAxisd rollAngle(0.0, Eigen::Vector3d::UnitX());   //M_PI
 	Eigen::AngleAxisd pitchAngle(0.0, Eigen::Vector3d::UnitY());
-	Eigen::AngleAxisd yawAngle(0.0, Eigen::Vector3d::UnitZ());
+	Eigen::AngleAxisd yawAngle(0, Eigen::Vector3d::UnitZ());
 	Eigen::Quaternion<double> init_q = yawAngle * pitchAngle * rollAngle;
 
 	Pose2 prior_pose = gtsam::Pose2(Rot2(0), gtsam::Point2(.0,.0));
@@ -29,8 +29,8 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 	prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-4, 1e-4, 1e-4).finished());
 	loose_prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e2, 1e2, 1e2).finished());
 	odom_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-1, 1e-2, 1e-2).finished());  // m, m, rad
-	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-0).finished());
-	rot_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-0).finished());
+	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-3).finished());
+	rot_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-2).finished());
 
 	// Add prior factor to the graph.
 	poseGraph->addPrior(X(pose_count), prior_pose, prior_noise_model_);
@@ -87,7 +87,7 @@ GraphOptimizer::generateOdomFactor()
 		double cost = exp(-abs(o_yx + o_theta));
 		double norm = sqrt(pow(dc_->odom_list[num-1][1],2) + pow(dc_->odom_list[num-1][0],2));
 		
-		cout << "[" << pose_count+1-ii << " & " << pose_count+1 << "] Cost: " << cost 
+		cout << "[" << num-ii << " & " << num << "] Cost: " << cost 
 			<< ", o_theta: " << o_theta/M_PI*180.0 << ", o_yx: " << o_yx << endl;
 
 		if(norm < RESOL ){ // There is no change.
@@ -103,9 +103,8 @@ GraphOptimizer::generateOdomFactor()
 			if(cost > odom_threshold_) {
 				pose_count ++;
 				pose_node_nums.push_back(pose_count);
-				if(pose_count-1 == pose_values.size()){
-					pose_values.push_back(current_pose);
-				}
+				pose_values.push_back(current_pose);
+
 				cout << "pose num : " << pose_values.size() << endl;
 				base_pose = pose_values.at(pose_count-ii);
 
@@ -123,9 +122,9 @@ GraphOptimizer::generateOdomFactor()
 				Pose2 prop_pose = gtsam::Pose2(orien, prop_point);
 
 				Pose2 odom_delta = gtsam::Pose2(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1], dc_->odom_list[num-1][2]); // x,y,theta
-				poseGraph->add(BetweenFactor<Pose2>(X(pose_count-ii), X(pose_count), odom_delta, odom_noise_model_));
+				poseGraph->add(BetweenFactor<Pose2>(X(num-ii), X(num), odom_delta, odom_noise_model_));
 				
-				initial_values.insert(X(pose_count), prop_pose);
+				initial_values.insert(X(num), prop_pose);
 
 
 				Eigen::AngleAxisd rollAngle(0.0, Eigen::Vector3d::UnitX());   //M_PI
@@ -135,8 +134,8 @@ GraphOptimizer::generateOdomFactor()
 
 				publishOdom(prop_pose, gtsam_quat);
 
-				cout << "Current pose number: " << pose_count << endl;
-				cout << "Best Matching pair: " << pose_count-ii << " & " << pose_count <<endl;
+				cout << "Total pose number: " << pose_count << endl;
+				cout << "Best Matching pair: " << num-ii << " & " << num <<endl;
 				cout << "x: " << dc_->odom_list[num-1][0] << ", y: " << dc_->odom_list[num-1][1]
 					<< ", theta: " << dc_->odom_list[num-1][2] << endl;
 
@@ -175,12 +174,12 @@ GraphOptimizer::regenerateOdomFactor()
 		double cost = exp(-abs(o_yx + o_theta));
 		double norm = sqrt(pow(dc_->odom_list[num-1][1],2) + pow(dc_->odom_list[num-1][0],2));
 		
-		cout << "[" << key_node+num-ii << " & " << key_node+num << "] Cost: " << cost 
+		cout << "[" << num-ii << " & " << num << "] Cost: " << cost 
 			<< ", o_theta: " << o_theta/M_PI*180.0 << ", o_yx: " << o_yx << endl;
 
 		if(cost > odom_threshold_) {
-
-			base_pose = pose_values.at(key_node+num-ii);
+			Pose2 pose = initial_values.at<Pose2>(X(0));
+			base_pose = Vector3(pose.x(), pose.y(), pose.theta());
 
 			Eigen::Vector2d odom_tr(base_pose(0), base_pose(1));
 			Eigen::Rotation2D<double> odom_rot(base_pose(2));
@@ -196,11 +195,12 @@ GraphOptimizer::regenerateOdomFactor()
 			Pose2 prop_pose = gtsam::Pose2(orien, prop_point);
 
 			Pose2 odom_delta = gtsam::Pose2(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1], dc_->odom_list[num-1][2]); // x,y,theta
-			poseGraph->add(BetweenFactor<Pose2>(X(key_node+num-ii), X(key_node+num), odom_delta, odom_noise_model_));
+			poseGraph->addPrior(X(num-ii+1), prop_pose, loose_prior_noise_model_);
+			initial_values.insert(X(num-ii+1), prop_pose);
+			poseGraph->add(BetweenFactor<Pose2>(X(num-ii), X(num), odom_delta, odom_noise_model_));
 
-
-			cout << "Current pose number: " << key_node+num << endl;
-			cout << "Best Matching pair: " << key_node+num-ii << " & " << key_node+num <<endl;
+			cout << "Current pose number: " << num << endl;
+			cout << "Best Matching pair: " << num-ii << " & " << num <<endl;
 			cout << "x: " << dc_->odom_list[num-1][0] << ", y: " << dc_->odom_list[num-1][1]
 				<< ", theta: " << dc_->odom_list[num-1][2] << endl;
 
@@ -294,12 +294,12 @@ GraphOptimizer::generateKeyfFactor()
 
     cout << "Indices sorted by cost : ";
 	for (int ii = 0; ii < num; ii++)
-    	cout << cost_idx[ii] << " ";
+    	cout << cost_idx[ii]+1 << " ";
     cout << endl;
 
     cout << "Indices sorted by delta_theta : ";
 	for (int ii = 0; ii < num; ii++)
-    	cout << cost_iter[ii] << " ";
+    	cout << cost_iter[ii]+1 << " ";
     cout << endl;
 
 	////////////////////////////////////////////////////
@@ -327,21 +327,21 @@ GraphOptimizer::generateKeyfFactor()
 
 			// p_ind : index of the new keyframe.
 			p_ind = i;
-			int new_key_node = pose_count-num+p_ind+1;
+			int new_key_node = p_ind+1;
 			cout << "$ Start keyframing (selected keyframe : " << new_key_node << ") $" << endl;
 
 			/////////////////////////////////////////////////////////
+			KeySet unused;
 			for(int ii = 0; ii < num; ii++) {
-				cout << "- Adding PharaoRotFactor between " << key_node << " & " << pose_count-num+ii+1;
+				cout << "- Adding PharaoRotFactor between 0 & " << ii+1;
 				if (p_ind == ii) {	// keyframe
-					poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), dc_->del_list[p_ind][2], key_noise_model_));
+					poseGraph->add(PharaoRotFactor(X(0), X(new_key_node), dc_->del_list[p_ind][2], key_noise_model_));
 					cout << " (keynode)";
 				} else if(atv[ii] > keyf_threshold_*atv[cost_idx[num-1]]) {	// not keyframe but higher than threshold.
-					poseGraph->add(PharaoRotFactor(X(key_node), X(pose_count-num+ii+1), dc_->del_list[ii][2], rot_noise_model_));
+					poseGraph->add(PharaoRotFactor(X(0), X(ii+1), dc_->del_list[ii][2], rot_noise_model_));
 				}
 				cout << endl;
 			}
-			
 
 			int p_size = num;
 			if(p_size > 2) {
@@ -353,11 +353,15 @@ GraphOptimizer::generateKeyfFactor()
 
 				isam2 = new ISAM2(parameters);
 				poseGraph = new NonlinearFactorGraph();
-				gtsam::Values NewGraphValues;
-				initial_values = NewGraphValues;
-
+    			initial_values.clear();
+			
 				/////////////////////////////////////////////////////////
 				prev_pose = odom_result.at<Pose2>(X(new_key_node));
+				poseGraph->addPrior(X(0), prev_pose, prior_noise_model_);
+				initial_values.insert(X(0), prev_pose);
+
+				isam2->update(*poseGraph, initial_values);
+				isam2->update();
 
 				cout << "Last Pose value:\n     x:" << prev_pose.translation().x() 
 					<< "     y:"<< prev_pose.translation().y() 
@@ -411,13 +415,6 @@ GraphOptimizer::generateKeyfFactor()
 				dc_->odom_list.fill({});
 				for (int ii = p_ind; ii < num; ii++)
 				{
-					int idx = pose_count-num+1+ii;
-					Pose2 pose = odom_result.at<Pose2>(X(idx));
-
-					poseGraph->addPrior(X(idx), pose, loose_prior_noise_model_);
-					
-					initial_values.insert(X(idx), pose);
-
 					dc_->window_list.push_back(*(iter_p + ii - p_ind));
 					dc_->window_list_cart.push_back(*(iter_c + ii - p_ind));
 					dc_->window_list_cart_f.push_back(*(iter_cf + ii - p_ind));

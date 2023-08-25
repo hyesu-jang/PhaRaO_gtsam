@@ -7,8 +7,7 @@
 #include <gtsam_custom/hs_rotation_factor.h>
 
 using namespace gtsam;
-using symbol_shorthand::X; // Pose2 (x,y,theta)
-using symbol_shorthand::K; // Rot2 (theta)
+inline Key X(std::uint64_t j) { return Symbol('x', j); } // Pose2 (x,y,theta)
 
 class GraphOptimizer : public FactorConstructor
 {
@@ -43,6 +42,7 @@ class GraphOptimizer : public FactorConstructor
 
 		// GTSAM
 		ISAM2 *isam2;
+		ISAM2Params parameters;
 		Values initial_values;
 		Vector2 trans_ ;
 		NonlinearFactorGraph* poseGraph = new NonlinearFactorGraph();
