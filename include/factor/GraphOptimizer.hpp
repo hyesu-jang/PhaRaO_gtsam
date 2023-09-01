@@ -20,8 +20,10 @@ class GraphOptimizer : public FactorConstructor
 		void optimize();
 
 	protected:
-		void publishOdom(Pose2 pose, Eigen::Quaterniond quat);
-		void publishOptOdom(Pose2 pose, Eigen::Quaterniond quat);
+		void publishOdom(ros::Time stamp, Pose2 pose, Eigen::Quaterniond quat);
+		void publishOptOdom(ros::Time stamp, Pose2 pose, Eigen::Quaterniond quat);
+		bool saveToFile(string filename, ros::Time stamp, 
+						Pose2 pose, Eigen::Quaterniond quat);
 
 		ros::Publisher pub_opt_odom_;
 		ros::Publisher pub_odom_;
@@ -33,6 +35,10 @@ class GraphOptimizer : public FactorConstructor
 		double keyf_threshold_ = 0.9;
 		double vel_threshold_ = 20.0;
 		double angvel_threshold_ = 7.0;
+
+		bool save_flag_ = false;
+		string filename_odom_ = "./odom.txt";
+		string filename_optodom_ = "./optodom.txt";
 
 		std::array<int, NUM> cost_idx;
 		std::array<int, NUM> cost_iter;

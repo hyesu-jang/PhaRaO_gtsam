@@ -18,6 +18,7 @@ struct DataContainer
     std::vector<cv::Mat> keyf_list_cart_f;
 
     std::vector<ros::Time> stamp_list;
+    std::vector<ros::Time> keyf_stamp_list;
 
     std::array<std::array<double, 3>, NUM> del_list;
     std::array<std::array<double, 3>, NUM> odom_list;

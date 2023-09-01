@@ -9,6 +9,10 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 	nh_.getParam("max_velocity_threshold", vel_threshold_);
 	nh_.getParam("max_angular_velocity_threshold", angvel_threshold_);
 
+	nh_.getParam("save_results_flag", save_flag_);
+	nh_.getParam("path_filename_odom", filename_odom_);
+	nh_.getParam("path_filename_optimized_odom", filename_optodom_);
+
 	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
 	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
 
@@ -133,7 +137,9 @@ GraphOptimizer::generateOdomFactor()
 				Eigen::AngleAxisd yawAngle(odom_rot.angle(), Eigen::Vector3d::UnitZ());
 				Eigen::Quaternion<double> gtsam_quat = yawAngle * pitchAngle * rollAngle;
 
-				publishOdom(prop_pose, gtsam_quat);
+				publishOdom(*(dc_->stamp_list.end()-1), prop_pose, gtsam_quat);
+				if (save_flag_)
+					saveToFile(filename_odom_, *(dc_->stamp_list.end()-1), prop_pose, gtsam_quat);
 
 				cout << "Current pose number: " << pose_count << endl;
 				cout << "Best Matching pair: " << pose_count-ii << " & " << pose_count <<endl;
@@ -367,7 +373,9 @@ GraphOptimizer::generateKeyfFactor()
 				Eigen::AngleAxisd yawAngle(prev_pose.rotation().theta(), Eigen::Vector3d::UnitZ());
 				Eigen::Quaternion<double> gtsam_quat = yawAngle * pitchAngle * rollAngle;
 
-				publishOptOdom(prev_pose, gtsam_quat);
+				publishOptOdom(*(dc_->stamp_list.begin() + 1 + p_ind), prev_pose, gtsam_quat);
+				if (save_flag_)
+					saveToFile(filename_optodom_, *(dc_->stamp_list.begin() + 1 + p_ind), prev_pose, gtsam_quat);
 
 				key_node = new_key_node;
 				window_loop += num;
@@ -376,6 +384,7 @@ GraphOptimizer::generateKeyfFactor()
 				std::vector<cv::Mat> temp_window_list;
 				std::vector<cv::Mat> temp_window_list_cart;
 				std::vector<cv::Mat> temp_window_list_cart_f;
+				std::vector<ros::Time> temp_stamp_list;
 
 				temp_window_list.resize((int)(dc_->window_list.size()));
 				copy(dc_->window_list.begin(), dc_->window_list.end(), temp_window_list.begin());
@@ -383,22 +392,29 @@ GraphOptimizer::generateKeyfFactor()
 				copy(dc_->window_list_cart.begin(), dc_->window_list_cart.end(), temp_window_list_cart.begin());
 				temp_window_list_cart_f.resize((int)(dc_->window_list_cart_f.size()));
 				copy(dc_->window_list_cart_f.begin(), dc_->window_list_cart_f.end(), temp_window_list_cart_f.begin());
+				temp_stamp_list.resize((int)(dc_->stamp_list.size()));
+				copy(dc_->stamp_list.begin(), dc_->stamp_list.end(), temp_stamp_list.begin());
 
 				cv::Mat last_p,last_c,last_cf;
+				ros::Time last_time;
 				auto iter_p = temp_window_list.begin() + 1 + p_ind;
 				last_p = *iter_p;
 				auto iter_c = temp_window_list_cart.begin() + 1 + p_ind;
 				last_c = *iter_c;
 				auto iter_cf = temp_window_list_cart_f.begin() + 1 + p_ind;
 				last_cf = *iter_cf;
+				auto iter_time = temp_stamp_list.begin() + 1 + p_ind;
+				last_time = *iter_time;
 
 				dc_->window_list.clear();
 				dc_->window_list_cart.clear();
 				dc_->window_list_cart_f.clear();
+				dc_->stamp_list.clear();
 
 				dc_->keyf_list.push_back(last_p);
 				dc_->keyf_list_cart.push_back(last_c);
 				dc_->keyf_list_cart_f.push_back(last_cf);
+				dc_->keyf_stamp_list.push_back(last_time);
 
 				// cout << "---- odom list" << endl;
 				// for (int ii = 0; ii < NUM; ii++)
@@ -421,6 +437,7 @@ GraphOptimizer::generateKeyfFactor()
 					dc_->window_list.push_back(*(iter_p + ii - p_ind));
 					dc_->window_list_cart.push_back(*(iter_c + ii - p_ind));
 					dc_->window_list_cart_f.push_back(*(iter_cf + ii - p_ind));
+					dc_->stamp_list.push_back(*(iter_time + ii - p_ind));
 
 					if(dc_->window_list.size() > 1)
 						regenerateOdomFactor();
@@ -435,9 +452,10 @@ GraphOptimizer::generateKeyfFactor()
 }
 
 void
-GraphOptimizer::publishOdom(Pose2 pose, Eigen::Quaterniond quat)
+GraphOptimizer::publishOdom(ros::Time stamp, Pose2 pose, Eigen::Quaterniond quat)
 {
 	nav_msgs::Odometry odom;
+	odom.header.stamp = stamp;
 	odom.header.frame_id = "odom";
 	odom.pose.pose.position.x = pose.translation().x();
 	odom.pose.pose.position.y = pose.translation().y();
@@ -450,9 +468,10 @@ GraphOptimizer::publishOdom(Pose2 pose, Eigen::Quaterniond quat)
 }
 
 void
-GraphOptimizer::publishOptOdom(Pose2 pose, Eigen::Quaterniond quat)
+GraphOptimizer::publishOptOdom(ros::Time stamp, Pose2 pose, Eigen::Quaterniond quat)
 {
 	nav_msgs::Odometry opt_odom;
+	opt_odom.header.stamp = stamp;
 	opt_odom.header.frame_id = "odom";
 	opt_odom.pose.pose.position.x = pose.translation().x();
 	opt_odom.pose.pose.position.y = pose.translation().y();
@@ -462,4 +481,25 @@ GraphOptimizer::publishOptOdom(Pose2 pose, Eigen::Quaterniond quat)
 	opt_odom.pose.pose.orientation.y = quat.y();
 	opt_odom.pose.pose.orientation.z = quat.z();
 	pub_opt_odom_.publish(opt_odom);
+}
+
+bool
+GraphOptimizer::saveToFile(string filename, ros::Time stamp, 
+							Pose2 pose, Eigen::Quaterniond quat)
+{
+	ofstream writeFile;
+	writeFile.open(filename, ios::app);
+	if(writeFile.is_open()) {
+		writeFile << stamp << ' '
+				  << pose.translation().x() << ' '
+				  << pose.translation().y() << " 0 "
+				  << quat.w() << ' ' << quat.x() << ' ' << quat.y() << ' ' << quat.z() << endl;
+		writeFile.close();
+
+		return true;
+	} else {
+		ROS_ERROR("Cannot open the file!!!");
+
+		return false;
+	}
 }

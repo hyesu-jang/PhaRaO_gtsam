@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find pharao_gtsam)/rviz/odom.rviz" />
+
     <node pkg="pharao_gtsam" type="pharao_gtsam_node" name="pharao_gtsam_node" output="screen">
         <!-- Sensor/Data dependent parameters -->
-        <param name="sub_topic" value="/radar/polar" />
+        <param name="sub_topic" value="/radar/image_polar" />
         <param name="is_polar_img" value="true" />
         <param name="radar_range_bin" value="3360" />
         <param name="radar_angular_bin" value="400" />
@@ -15,6 +17,11 @@
         <param name="keyframe_factor_cost_threshold" value="0.9" />
         <param name="max_velocity_threshold" value="20.0" />
         <param name="max_angular_velocity_threshold" value="7.0" />
+
+        <!-- Others -->
+        <param name="save_results_flag" value="false" />
+        <param name="path_filename_odom" value="$(find pharao_gtsam)/odom.txt" />
+        <param name="path_filename_optimized_odom" value="$(find pharao_gtsam)/optodom.txt"/>
     </node>
 
 </launch>

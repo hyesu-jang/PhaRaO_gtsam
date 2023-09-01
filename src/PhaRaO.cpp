@@ -29,6 +29,9 @@ PhaRaO::callback(const sensor_msgs::ImageConstPtr& msg)
 {
 	ros::Time stamp = msg->header.stamp;
 	dc_->stamp_list.push_back(stamp);
+	if(dc_->initialized == false) {
+		dc_->keyf_stamp_list.push_back(stamp);
+	}
 
 	// Image preprocessing for phase correlation
 	cv::Mat img = cv_bridge::toCvShare(msg, "mono8")->image;
