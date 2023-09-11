@@ -60,15 +60,15 @@ Although the original paper is based on iSAM, this release integrate the code wi
     rosrun pharao_gtsam pharao_gtsam_node
     rviz -d ~/catkin_ws/src/PhaRaO_gtsam/rviz/odom.rviz
     ~~~
-5-1. Or run by using launch file
-~~~
-roslaunch src/PhaRaO_gtsam/launch/radar_odom.launch
-~~~
+&nbsp; 5-1. Or run by using launch file
+   ~~~
+   roslaunch src/PhaRaO_gtsam/launch/radar_odom.launch
+   ~~~
 
-5-2. Saving result trajectory
+&nbsp; 5-2. Saving result trajectory
 
-Enable save flag "True"
-`<param name="save_results_flag" value="false" />`
+   Enable save flag "True"
+   `<param name="save_results_flag" value="false" />`
 
 ## Parameter Changing
 If your bag file fails to generate odometry, revise the parameter in the file **_radar_odom.cpp_**
