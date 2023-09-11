@@ -6,7 +6,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
 
 
 ## Prerequisite
-1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic? (TODO)
+1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic
 2. [GTSAM](https://gtsam.org/)
    Use develop branch.
    
@@ -62,7 +62,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
     ~~~
 &nbsp; 5-1. Or run by using launch file
    ~~~
-   roslaunch src/PhaRaO_gtsam/launch/radar_odom.launch
+   roslaunch pharao_gtsam radar_odom.launch
    ~~~
 
 &nbsp; 5-2. Saving result trajectory
@@ -79,5 +79,5 @@ If your bag file fails to generate odometry, revise the parameter in the file **
 
 ## Maintainer
 
-Hyesu Jan (pys0728k at gmail dot com)
-Yeong Sang Park (dortz at snu dot ac dot kr)
+Hyesu Jang (dortz at snu dot ac dot kr)
+Yeong Sang Park (pys0728k at gmail dot com)
