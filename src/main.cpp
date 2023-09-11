@@ -18,7 +18,12 @@ int main(int argc, char** argv)
 	nh.getParam("sub_topic", param_radarSubTopic_);
 	image_transport::Subscriber sub = it.subscribe(param_radarSubTopic_, 1, &PhaRaO::callback, &pr);
 
-	ros::spin();
+	
+	while (true)
+	{
+		ros::spinOnce();
+	}
+	
 
 	return 0;
 }

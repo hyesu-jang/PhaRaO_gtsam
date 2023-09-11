@@ -5,23 +5,29 @@
 
     <node pkg="pharao_gtsam" type="pharao_gtsam_node" name="pharao_gtsam_node" output="screen">
         <!-- Sensor/Data dependent parameters -->
-        <param name="sub_topic" value="/radar/polar" />
-        <param name="is_polar_img" value="true" />
-        <param name="radar_range_bin" value="3360" />
-        <param name="radar_angular_bin" value="400" />
+        <param name="sub_topic"             type="str" value="/radar/polar" />
+        <param name="is_polar_img"          type="bool" value="true" />
+        <param name="radar_range_bin"       type="int" value="3360" />
+        <param name="radar_angular_bin"     type="int" value="400" />
 
         <!-- User custom parameters -->
-        <param name="coarse_scale_factor" value="10" />
-        <param name="sub_img_size" value="500" />
-        <param name="odom_factor_cost_threshold" value="0.70" />
-        <param name="keyframe_factor_cost_threshold" value="0.9" />
-        <param name="max_velocity_threshold" value="20.0" />
-        <param name="max_angular_velocity_threshold" value="7.0" />
+        <param name="coarse_scale_factor"               type="double" value="10.0" />
+        <param name="sub_img_size"                      type="int"    value="500" />
+        <param name="odom_factor_cost_threshold"        type="double" value="0.80" />
+        <param name="keyframe_factor_cost_threshold"    type="double" value="0.80" />
+        <param name="max_velocity_threshold"            type="double" value="20.0" />
+        <param name="max_angular_velocity_threshold"    type="double" value="10.0" />
+
+        <param name="odom_noise_model_variance_x"       type="double" value="1.0e-03" />
+        <param name="odom_noise_model_variance_y"       type="double" value="1.0e-03" />
+        <param name="odom_noise_model_variance_theta"   type="double" value="1.0e-03" />
+        <param name="keyframe_noise_model_variance"     type="double" value="5.0e-03" />
+        <param name="velocity_direction_noise_model_variance" type="double" value="5.0e-02" />
 
         <!-- Others -->
-        <param name="save_results_flag" value="false" />
-        <param name="path_filename_odom" value="$(find pharao_gtsam)/odom.txt" />
-        <param name="path_filename_optimized_odom" value="$(find pharao_gtsam)/optodom.txt"/>
+        <param name="save_results_flag"             type="bool" value="false" />
+        <param name="path_filename_odom"            type="str" value="$(find pharao_gtsam)/odom.txt" />
+        <param name="path_filename_optimized_odom"  type="str" value="$(find pharao_gtsam)/optodom.txt"/>
     </node>
 
 </launch>

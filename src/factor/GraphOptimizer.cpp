@@ -13,6 +13,12 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 	nh_.getParam("path_filename_odom", filename_odom_);
 	nh_.getParam("path_filename_optimized_odom", filename_optodom_);
 
+	nh_.getParam("odom_noise_model_variance_x", odom_var_x_);
+	nh_.getParam("odom_noise_model_variance_y", odom_var_y_);
+	nh_.getParam("odom_noise_model_variance_theta", odom_var_theta_);
+	nh_.getParam("keyframe_noise_model_variance", keyf_var_);
+	nh_.getParam("velocity_direction_noise_model_variance", vel_dir_var_);
+
 	pub_opt_odom_ 	= nh.advertise<nav_msgs::Odometry>("/opt_odom", 1000);
 	pub_odom_ 		= nh.advertise<nav_msgs::Odometry>("/odom", 1000);
 
@@ -31,10 +37,10 @@ GraphOptimizer::GraphOptimizer(ros::NodeHandle nh, DataContainer* dc)
 	initial_values.insert(X(pose_count), prior_pose);
 
 	prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-4, 1e-4, 1e-4).finished());
-	loose_prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e2, 1e2, 1e2).finished());
-	odom_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1e-1, 1e-2, 1e-2).finished());  // m, m, rad
-	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-0).finished());
-	rot_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << 1e-0).finished());
+	loose_prior_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << 1, 1, 1).finished());
+	odom_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(3) << odom_var_x_, odom_var_y_, odom_var_theta_).finished());
+	key_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << keyf_var_).finished());
+	vel_dir_noise_model_ = noiseModel::Diagonal::Sigmas((Vector(1) << vel_dir_var_).finished());
 
 	// Add prior factor to the graph.
 	poseGraph->addPrior(X(pose_count), prior_pose, prior_noise_model_);
@@ -163,60 +169,6 @@ GraphOptimizer::generateOdomFactor()
 }
 
 void
-GraphOptimizer::regenerateOdomFactor()
-{
-	// Phase correlation (coarse to fine)
-	int num = dc_->window_list.size() - 1;
-	int index = 0;
-
-	cout << "---- Regenerate Odometry Factor ----" << endl;
-	for(int ii = 1; ii <= num; ii++) {
-		int begin = num-ii;
-		int end = num;
-		dc_->odom_list[num-1] = factorGeneration(begin, end);
-
-		// Cost calculation
-		double o_yx = atan2(dc_->odom_list[num-1][1], dc_->odom_list[num-1][0]);
-		double o_theta = dc_->odom_list[num-1][2];
-		double cost = exp(-abs(o_yx + o_theta));
-		double norm = sqrt(pow(dc_->odom_list[num-1][1],2) + pow(dc_->odom_list[num-1][0],2));
-		
-		cout << "[" << key_node+num-ii << " & " << key_node+num << "] Cost: " << cost 
-			<< ", o_theta: " << o_theta/M_PI*180.0 << ", o_yx: " << o_yx << endl;
-
-		if(cost > odom_threshold_) {
-
-			base_pose = pose_values.at(key_node+num-ii);
-
-			Eigen::Vector2d odom_tr(base_pose(0), base_pose(1));
-			Eigen::Rotation2D<double> odom_rot(base_pose(2));
-			Eigen::Vector2d tr_delta(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1]);
-			Eigen::Rotation2D<double> rot_delta(dc_->odom_list[num-1][2]);
-
-			odom_rot = odom_rot * rot_delta;
-			odom_tr = odom_tr + odom_rot * tr_delta;
-
-			current_pose << odom_tr(0), odom_tr(1), odom_rot.angle();
-			Point2 prop_point = gtsam::Point2(current_pose(0),current_pose(1));
-			Rot2 orien = Rot2(current_pose(2));
-			Pose2 prop_pose = gtsam::Pose2(orien, prop_point);
-
-			Pose2 odom_delta = gtsam::Pose2(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1], dc_->odom_list[num-1][2]); // x,y,theta
-			poseGraph->add(BetweenFactor<Pose2>(X(key_node+num-ii), X(key_node+num), odom_delta, odom_noise_model_));
-
-
-			cout << "Current pose number: " << key_node+num << endl;
-			cout << "Best Matching pair: " << key_node+num-ii << " & " << key_node+num <<endl;
-			cout << "x: " << dc_->odom_list[num-1][0] << ", y: " << dc_->odom_list[num-1][1]
-				<< ", theta: " << dc_->odom_list[num-1][2] << endl;
-
-			break;
-		}
-
-	}
-}
-
-void
 GraphOptimizer::generateKeyfFactor()
 {
 	static int cnt = 0;
@@ -340,10 +292,14 @@ GraphOptimizer::generateKeyfFactor()
 			for(int ii = 0; ii < num; ii++) {
 				cout << "- Adding PharaoRotFactor between " << key_node << " & " << pose_count-num+ii+1;
 				if (p_ind == ii) {	// keyframe
-					poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), dc_->del_list[p_ind][2], key_noise_model_));
+					if (norm_v[0] > RESOL)
+						poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), dc_->del_list[p_ind][2], key_noise_model_));
+					if (norm_v[0] > 0.3)
+						poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), atan2(dc_->del_list[p_ind][1],dc_->del_list[p_ind][0]), vel_dir_noise_model_));
 					cout << " (keynode)";
 				} else if(atv[ii] > keyf_threshold_*atv[cost_idx[num-1]]) {	// not keyframe but higher than threshold.
-					poseGraph->add(PharaoRotFactor(X(key_node), X(pose_count-num+ii+1), dc_->del_list[ii][2], rot_noise_model_));
+					if (norm_v[0] > RESOL)
+						poseGraph->add(PharaoRotFactor(X(key_node), X(pose_count-num+ii+1), dc_->del_list[ii][2], vel_dir_noise_model_));
 				}
 				cout << endl;
 			}
@@ -416,31 +372,32 @@ GraphOptimizer::generateKeyfFactor()
 				dc_->keyf_list_cart_f.push_back(last_cf);
 				dc_->keyf_stamp_list.push_back(last_time);
 
-				// cout << "---- odom list" << endl;
-				// for (int ii = 0; ii < NUM; ii++)
-				// {
-				// 	cout << dc_->odom_list[ii][0] << ", " << dc_->odom_list[ii][1] << ", " << dc_->odom_list[ii][2] << endl;
-				// }
-
 				std::array<std::array<double, 3>, NUM> temp_odom_list;
 				copy(dc_->odom_list.begin(), dc_->odom_list.end(), temp_odom_list.begin());
 				dc_->odom_list.fill({});
+
 				for (int ii = p_ind; ii < num; ii++)
 				{
 					int idx = pose_count-num+1+ii;
 					Pose2 pose = odom_result.at<Pose2>(X(idx));
 
-					poseGraph->addPrior(X(idx), pose, loose_prior_noise_model_);
+					if (ii == p_ind){
+						poseGraph->addPrior(X(idx), pose, prior_noise_model_);
+						initial_values.insert(X(idx), pose);
+					}
+					else
+					{
+						Pose2 prev_pose = odom_result.at<Pose2>(X(idx-1));
+						Pose2 diff = prev_pose.inverse() * pose ;
+						poseGraph->add(BetweenFactor<Pose2>(X(idx-1), X(idx), diff, odom_noise_model_));
+						initial_values.insert(X(idx), pose);
+					}
 					
-					initial_values.insert(X(idx), pose);
-
 					dc_->window_list.push_back(*(iter_p + ii - p_ind));
 					dc_->window_list_cart.push_back(*(iter_c + ii - p_ind));
 					dc_->window_list_cart_f.push_back(*(iter_cf + ii - p_ind));
 					dc_->stamp_list.push_back(*(iter_time + ii - p_ind));
 
-					if(dc_->window_list.size() > 1)
-						regenerateOdomFactor();
 				}
 
 				cnt++;

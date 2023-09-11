@@ -15,7 +15,6 @@ class GraphOptimizer : public FactorConstructor
 		GraphOptimizer(ros::NodeHandle nh, DataContainer* dc);
 		~GraphOptimizer();
 		bool generateOdomFactor();
-		void regenerateOdomFactor();
 		void generateKeyfFactor();
 		void optimize();
 
@@ -35,6 +34,12 @@ class GraphOptimizer : public FactorConstructor
 		double keyf_threshold_ = 0.9;
 		double vel_threshold_ = 20.0;
 		double angvel_threshold_ = 7.0;
+
+		double odom_var_x_ = 1e-3;	// m, m, rad
+		double odom_var_y_ = 1e-3;
+		double odom_var_theta_ = 1e-3;
+		double keyf_var_ = 1e-3;
+		double vel_dir_var_ = 1e-2;
 
 		bool save_flag_ = false;
 		string filename_odom_ = "./odom.txt";
@@ -58,7 +63,7 @@ class GraphOptimizer : public FactorConstructor
 		noiseModel::Diagonal::shared_ptr loose_prior_noise_model_;
 		noiseModel::Diagonal::shared_ptr odom_noise_model_;
 		noiseModel::Diagonal::shared_ptr key_noise_model_;
-		noiseModel::Diagonal::shared_ptr rot_noise_model_;
+		noiseModel::Diagonal::shared_ptr vel_dir_noise_model_;
 
 		Vector3 current_pose;
 		Vector3 base_pose;

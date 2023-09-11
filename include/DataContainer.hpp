@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-#define NUM 5
+#define NUM 4
 
 struct DataContainer
 {
