@@ -76,3 +76,8 @@ If your bag file fails to generate odometry, revise the parameter in the file **
 1. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L491) for generating odometry factor
 
 2. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L623) for keyframe factor
+
+## Maintainer
+
+Hyesu Jan (pys0728k at gmail dot com)
+Yeong Sang Park (dortz at snu dot ac dot kr)
