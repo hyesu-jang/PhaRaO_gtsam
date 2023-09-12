@@ -84,6 +84,9 @@ GraphOptimizer::generateOdomFactor()
 	int num = dc_->window_list.size() - 1;
 	int index = 0;
 
+	static double bias = .0;
+	static int bias_cnt = 0;
+
 	cout << "---- Odometry Factor ----" << endl;
 	// Odom. Frame factor 
 	for(int ii = 1; ii <= num; ii++) {
@@ -93,14 +96,23 @@ GraphOptimizer::generateOdomFactor()
 
 		// Cost calculation
 		double o_yx = atan2(dc_->odom_list[num-1][1], dc_->odom_list[num-1][0]);
-		double o_theta = dc_->odom_list[num-1][2];
+
+		double o_theta;
+		if (bias_cnt == 0)
+			o_theta = dc_->odom_list[num-1][2];
+		else
+			o_theta = dc_->odom_list[num-1][2] - bias/(double)bias_cnt;
 		double cost = exp(-abs(o_yx + o_theta));
 		double norm = sqrt(pow(dc_->odom_list[num-1][1],2) + pow(dc_->odom_list[num-1][0],2));
 		
 		cout << "[" << pose_count+1-ii << " & " << pose_count+1 << "] Cost: " << cost 
-			<< ", o_theta: " << o_theta/M_PI*180.0 << ", o_yx: " << o_yx << endl;
+			<< ", o_theta: " << o_theta << ", o_yx: " << o_yx << endl;
 
-		if(norm < RESOL ){ // There is no change.
+		if(norm < 0.5 && cost < odom_threshold_){ // There is no change.
+
+			bias_cnt++;
+			bias += dc_->odom_list[num-1][2];
+
 			ROS_WARN("Poor Measurement.");
 			dc_->window_list.erase(dc_->window_list.end()-1);
 			dc_->window_list_cart.erase(dc_->window_list_cart.end()-1);
@@ -110,7 +122,7 @@ GraphOptimizer::generateOdomFactor()
 
 			return false;
 		} else {
-			if(cost > odom_threshold_) {
+			if(cost >= odom_threshold_) {
 				pose_count ++;
 				pose_node_nums.push_back(pose_count);
 				if(pose_count-1 == pose_values.size()){
@@ -121,8 +133,13 @@ GraphOptimizer::generateOdomFactor()
 
 				Eigen::Vector2d odom_tr(base_pose(0), base_pose(1));
 				Eigen::Rotation2D<double> odom_rot(base_pose(2));
-				Eigen::Vector2d tr_delta(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1]);
-				Eigen::Rotation2D<double> rot_delta(dc_->odom_list[num-1][2]);
+				
+				double x = norm;
+				double theta = dc_->odom_list[num-1][2] - bias/(double)bias_cnt;
+				double y = x * tan(theta);
+
+				Eigen::Vector2d tr_delta(x, y);
+				Eigen::Rotation2D<double> rot_delta(theta);
 
 				odom_rot = odom_rot * rot_delta;
 				odom_tr = odom_tr + odom_rot * tr_delta;
@@ -132,7 +149,7 @@ GraphOptimizer::generateOdomFactor()
 				Rot2 orien = Rot2(current_pose(2));
 				Pose2 prop_pose = gtsam::Pose2(orien, prop_point);
 
-				Pose2 odom_delta = gtsam::Pose2(dc_->odom_list[num-1][0], dc_->odom_list[num-1][1], dc_->odom_list[num-1][2]); // x,y,theta
+				Pose2 odom_delta = gtsam::Pose2(x, y, theta); // x,y,theta
 				poseGraph->add(BetweenFactor<Pose2>(X(pose_count-ii), X(pose_count), odom_delta, odom_noise_model_));
 				
 				initial_values.insert(X(pose_count), prop_pose);
@@ -150,7 +167,7 @@ GraphOptimizer::generateOdomFactor()
 				cout << "Current pose number: " << pose_count << endl;
 				cout << "Best Matching pair: " << pose_count-ii << " & " << pose_count <<endl;
 				cout << "x: " << dc_->odom_list[num-1][0] << ", y: " << dc_->odom_list[num-1][1]
-					<< ", theta: " << dc_->odom_list[num-1][2] << endl;
+					<< ", theta: " << dc_->odom_list[num-1][2] - bias/(double)bias_cnt << endl;
 
 				return true;
 			}
@@ -292,13 +309,11 @@ GraphOptimizer::generateKeyfFactor()
 			for(int ii = 0; ii < num; ii++) {
 				cout << "- Adding PharaoRotFactor between " << key_node << " & " << pose_count-num+ii+1;
 				if (p_ind == ii) {	// keyframe
-					if (norm_v[0] > RESOL)
+					if (norm_v[0] > 0.5)
 						poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), dc_->del_list[p_ind][2], key_noise_model_));
-					if (norm_v[0] > 0.3)
-						poseGraph->add(PharaoRotFactor(X(key_node), X(new_key_node), atan2(dc_->del_list[p_ind][1],dc_->del_list[p_ind][0]), vel_dir_noise_model_));
 					cout << " (keynode)";
 				} else if(atv[ii] > keyf_threshold_*atv[cost_idx[num-1]]) {	// not keyframe but higher than threshold.
-					if (norm_v[0] > RESOL)
+					if (norm_v[0] > 0.5)
 						poseGraph->add(PharaoRotFactor(X(key_node), X(pose_count-num+ii+1), dc_->del_list[ii][2], vel_dir_noise_model_));
 				}
 				cout << endl;
