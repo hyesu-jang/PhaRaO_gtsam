@@ -76,9 +76,13 @@ Although the original paper is based on iSAM, this release integrate the code wi
 ## Parameter Changing
 If your bag file fails to generate odometry, revise the parameter in the file **_radar_odom.cpp_**
 
-1. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L491) for generating odometry factor
+1. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/73ebffa8f1efdffca62fbfc64234918f3c9e5b4d/launch/radar_odom.launch#L16) for generating odometry factor
 
-2. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/258a9e1e354d34ad936613117b53aabf090398fc/src/radar_odom.cpp#L623) for keyframe factor
+2. [Cost](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/73ebffa8f1efdffca62fbfc64234918f3c9e5b4d/launch/radar_odom.launch#L17) for keyframe factor
+
+3. [Scale Factor](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/73ebffa8f1efdffca62fbfc64234918f3c9e5b4d/launch/radar_odom.launch#L14C26-L14C26)
+
+4. Thresholds for [linear](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/73ebffa8f1efdffca62fbfc64234918f3c9e5b4d/launch/radar_odom.launch#L18) and [angular](https://github.com/hyesu-jang/PhaRaO_gtsam/blob/73ebffa8f1efdffca62fbfc64234918f3c9e5b4d/launch/radar_odom.launch#L19) velocity
 
 ## Maintainer
 
