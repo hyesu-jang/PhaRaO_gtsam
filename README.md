@@ -4,6 +4,9 @@
 This repo reproduces the code for the paper [PhaRaO: Direct Radar Odometry using Phase Correlation.](https://rpm.snu.ac.kr/publications/yspark-2020-icra.pdf)
 Although the original paper is based on iSAM, this release integrate the code with gtSAM.
 
+<p align="center"><img src="https://github.com/hyesu-jang/PhaRaO_gtsam/assets/30336462/655f5e0e-5391-423f-af94-4f94809e40b3" height=220> <img src="https://github.com/hyesu-jang/PhaRaO_gtsam/assets/30336462/28635bcd-02cc-4024-b8b7-f494cc4a9eb6" height=220></p>
+
+
 
 ## Prerequisite
 1. [ROS](https://wiki.ros.org/noetic/Installation/Ubuntu) The code has been tested using ROS Noetic
