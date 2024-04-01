@@ -19,7 +19,7 @@ Although the original paper is based on iSAM, this release integrate the code wi
    We need normal installation followed by float option installed. We need both `FFTW3Config.cmake` file and `FFTW3fConfig.cmake`. So first compile without float option.
    
    $ cmake .  
-   $ ./configure --enable-shared --enable-threads --enable-float  
+   $ ./configure --enable-shared --enable-threads
    $ make  
    $ sudo make install
 
